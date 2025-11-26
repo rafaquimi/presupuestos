@@ -17,6 +17,9 @@ async function getPresupuesto(id: string) {
   return presupuesto;
 }
 
+type PresupuestoConRelaciones = NonNullable<Awaited<ReturnType<typeof getPresupuesto>>>;
+type ProductoType = PresupuestoConRelaciones['productos'][0];
+
 export default async function VerPresupuestoPublico({
   params,
 }: {
@@ -114,7 +117,7 @@ export default async function VerPresupuestoPublico({
             Productos Incluidos
           </h2>
           <div className="space-y-6">
-            {presupuesto.productos.map((producto, index) => (
+            {presupuesto.productos.map((producto: ProductoType, index: number) => (
               <div
                 key={producto.id}
                 className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
@@ -148,8 +151,8 @@ export default async function VerPresupuestoPublico({
                         <ul className="space-y-2">
                           {producto.caracteristicas
                             .split("\n")
-                            .filter((c) => c.trim())
-                            .map((caracteristica, idx) => (
+                            .filter((c: string) => c.trim())
+                            .map((caracteristica: string, idx: number) => (
                               <li
                                 key={idx}
                                 className="flex items-start gap-2 text-gray-700"
