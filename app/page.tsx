@@ -16,6 +16,8 @@ async function getPresupuestos() {
   return presupuestos;
 }
 
+type PresupuestoConRelaciones = Awaited<ReturnType<typeof getPresupuestos>>[0];
+
 export default async function Home() {
   const presupuestos = await getPresupuestos();
 
@@ -64,7 +66,7 @@ export default async function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {presupuestos.map((presupuesto) => (
+            {presupuestos.map((presupuesto: PresupuestoConRelaciones) => (
               <Link
                 key={presupuesto.id}
                 href={`/presupuestos/${presupuesto.id}`}
