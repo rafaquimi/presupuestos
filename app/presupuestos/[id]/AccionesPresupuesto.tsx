@@ -108,8 +108,7 @@ Le enviamos el presupuesto #${numeroPresupuesto} que solicitó.
 
 💰 Total: €${total.toFixed(2)}
 
-📄 Puede ver el presupuesto completo aquí:
-${enlacePublico}
+📄 Ver presupuesto completo: ${enlacePublico}
 
 Quedamos a su disposición para cualquier consulta.
 
