@@ -84,7 +84,7 @@ export async function POST(request: Request) {
                     <table width="100%" cellpadding="8" cellspacing="0" style="margin: 20px 0; border: 1px solid #e5e7eb; border-radius: 8px;">
                       ${presupuesto.productos
                         .map(
-                          (p) =>
+                          (p: typeof presupuesto.productos[0]) =>
                             `<tr style="border-bottom: 1px solid #f3f4f6;">
                               <td style="padding: 12px; font-size: 14px;">
                                 <strong>${p.nombre}</strong><br>
