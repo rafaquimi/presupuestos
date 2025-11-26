@@ -191,8 +191,8 @@ export default async function PresupuestoPage({
                         <ul className="list-disc list-inside space-y-1 text-gray-600">
                           {producto.caracteristicas
                             .split("\n")
-                            .filter((c) => c.trim())
-                            .map((caracteristica, idx) => (
+                            .filter((c: string) => c.trim())
+                            .map((caracteristica: string, idx: number) => (
                               <li key={idx}>{caracteristica.trim()}</li>
                             ))}
                         </ul>
