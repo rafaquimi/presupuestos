@@ -27,6 +27,9 @@ async function getPresupuesto(id: string) {
   return presupuesto;
 }
 
+type PresupuestoConRelaciones = NonNullable<Awaited<ReturnType<typeof getPresupuesto>>>;
+type ProductoType = PresupuestoConRelaciones['productos'][0];
+
 export default async function PresupuestoPage({
   params,
 }: {
@@ -154,7 +157,7 @@ export default async function PresupuestoPage({
             Productos
           </h2>
           <div className="space-y-6">
-            {presupuesto.productos.map((producto, index) => (
+            {presupuesto.productos.map((producto: ProductoType, index: number) => (
               <div
                 key={producto.id}
                 className="border border-gray-200 rounded-lg p-4"
