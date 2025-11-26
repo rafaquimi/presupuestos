@@ -29,7 +29,7 @@ export async function GET(
     const pdfBuffer = await renderToBuffer(pdfDoc);
 
     // Retornar PDF
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="presupuesto-${presupuesto.numero}.pdf"`,
