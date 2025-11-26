@@ -41,13 +41,13 @@ export default async function VerPresupuestoPublico({
         </div>
 
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-md p-8 mb-6">
-          <div className="flex justify-between items-start mb-6">
+        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 lg:p-8 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                 Presupuesto #{presupuesto.numero}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm md:text-base">
                 {new Date(presupuesto.createdAt).toLocaleDateString("es-ES", {
                   year: "numeric",
                   month: "long",
@@ -55,9 +55,9 @@ export default async function VerPresupuestoPublico({
                 })}
               </p>
             </div>
-            <div className="text-right">
+            <div className="w-full sm:w-auto sm:text-right">
               <div className="text-sm text-gray-600 mb-1">Total</div>
-              <div className="text-4xl font-bold text-blue-600">
+              <div className="text-3xl md:text-4xl font-bold text-blue-600">
                 €{presupuesto.total.toFixed(2)}
               </div>
             </div>
@@ -67,8 +67,8 @@ export default async function VerPresupuestoPublico({
         </div>
 
         {/* Información del Cliente */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4">
             Información del Cliente
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,34 +112,34 @@ export default async function VerPresupuestoPublico({
         </div>
 
         {/* Productos */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6">
             Productos Incluidos
           </h2>
           <div className="space-y-6">
             {presupuesto.productos.map((producto: ProductoType, index: number) => (
               <div
                 key={producto.id}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-lg transition-shadow"
               >
-                <div className="flex gap-6">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6">
                   {producto.imagenUrl && (
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 w-full md:w-auto flex justify-center md:justify-start">
                       <Image
                         src={producto.imagenUrl}
                         alt={producto.nombre}
                         width={200}
                         height={200}
-                        className="rounded-lg object-cover shadow-md"
+                        className="rounded-lg object-cover shadow-md max-w-full h-auto"
                       />
                     </div>
                   )}
                   <div className="flex-grow">
-                    <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
                       {index + 1}. {producto.nombre}
                     </h3>
                     {producto.descripcion && (
-                      <p className="text-gray-600 mb-4 text-lg">
+                      <p className="text-gray-600 mb-4 text-base md:text-lg">
                         {producto.descripcion}
                       </p>
                     )}
@@ -155,21 +155,21 @@ export default async function VerPresupuestoPublico({
                             .map((caracteristica: string, idx: number) => (
                               <li
                                 key={idx}
-                                className="flex items-start gap-2 text-gray-700"
+                                className="flex items-start gap-2 text-gray-700 text-sm md:text-base"
                               >
-                                <span className="text-blue-600 mt-1">✓</span>
-                                <span>{caracteristica.trim()}</span>
+                                <span className="text-blue-600 mt-1 flex-shrink-0">✓</span>
+                                <span className="break-words">{caracteristica.trim()}</span>
                               </li>
                             ))}
                         </ul>
                       </div>
                     )}
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                      <div className="text-gray-600 text-lg">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-4 pt-4 border-t border-gray-200">
+                      <div className="text-gray-600 text-base md:text-lg">
                         Cantidad: <span className="font-semibold">{producto.cantidad}</span> x €
                         {producto.precio.toFixed(2)}
                       </div>
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-xl md:text-2xl font-bold text-blue-600">
                         €{(producto.precio * producto.cantidad).toFixed(2)}
                       </div>
                     </div>
@@ -182,24 +182,24 @@ export default async function VerPresupuestoPublico({
 
         {/* Notas */}
         {presupuesto.notas && (
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4">
               Información Adicional
             </h2>
-            <p className="text-gray-600 whitespace-pre-wrap text-lg">
+            <p className="text-gray-600 whitespace-pre-wrap text-base md:text-lg">
               {presupuesto.notas}
             </p>
           </div>
         )}
 
         {/* Total Final */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg p-8 text-white">
-          <div className="flex justify-between items-center">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg p-6 md:p-8 text-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Total del Presupuesto</h2>
+              <h2 className="text-xl md:text-2xl font-bold mb-2">Total del Presupuesto</h2>
               <p className="text-blue-100">IVA incluido</p>
             </div>
-            <div className="text-5xl font-bold">
+            <div className="text-3xl md:text-4xl lg:text-5xl font-bold">
               €{presupuesto.total.toFixed(2)}
             </div>
           </div>
