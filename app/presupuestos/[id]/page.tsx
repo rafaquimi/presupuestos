@@ -90,6 +90,9 @@ export default async function PresupuestoPage({
         <AccionesPresupuesto
           presupuestoId={presupuesto.id}
           clienteEmail={presupuesto.cliente.email}
+          clienteTelefono={presupuesto.cliente.telefono || undefined}
+          numeroPresupuesto={presupuesto.numero}
+          total={presupuesto.total}
           enlacePublico={enlacePublico}
         />
 
