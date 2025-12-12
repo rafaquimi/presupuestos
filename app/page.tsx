@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { PlusCircle, FileText, Calendar, User } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 
+// Forzar renderizado dinámico (no estático durante el build)
+export const dynamic = 'force-dynamic';
+
 async function getPresupuestos() {
   const presupuestos = await prisma.presupuesto.findMany({
     include: {

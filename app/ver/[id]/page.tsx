@@ -5,6 +5,9 @@ import Image from "next/image";
 import DescargarPDFButton from "./DescargarPDFButton";
 import Logo from "@/components/Logo";
 
+// Forzar renderizado dinámico
+export const dynamic = 'force-dynamic';
+
 async function getPresupuesto(id: string) {
   const presupuesto = await prisma.presupuesto.findUnique({
     where: { id },
