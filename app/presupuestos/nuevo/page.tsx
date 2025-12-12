@@ -87,15 +87,18 @@ export default function NuevoPresupuesto() {
         }),
       });
 
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
         router.push(`/presupuestos/${data.id}`);
       } else {
-        alert("Error al crear el presupuesto");
+        const errorMsg = data.details || data.error || "Error desconocido";
+        alert(`Error al crear el presupuesto:\n${errorMsg}`);
+        console.error("Error del servidor:", data);
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al crear el presupuesto");
+      alert("Error de conexión al crear el presupuesto");
     } finally {
       setLoading(false);
     }
