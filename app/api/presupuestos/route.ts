@@ -6,6 +6,21 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { cliente, productos, notas, total } = body;
 
+    // Validar datos requeridos
+    if (!cliente || !cliente.email || !cliente.nombre) {
+      return NextResponse.json(
+        { error: "Datos del cliente incompletos (nombre y email requeridos)" },
+        { status: 400 }
+      );
+    }
+
+    if (!productos || !Array.isArray(productos) || productos.length === 0) {
+      return NextResponse.json(
+        { error: "Debe incluir al menos un producto" },
+        { status: 400 }
+      );
+    }
+
     // Generar número de presupuesto único
     const count = await prisma.presupuesto.count();
     const numero = `PRES-${String(count + 1).padStart(6, "0")}`;
@@ -52,10 +67,19 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(presupuesto, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating presupuesto:", error);
+    
+    // Devolver mensaje de error más específico
+    const errorMessage = error?.message || "Error desconocido";
+    const errorCode = error?.code || "UNKNOWN";
+    
     return NextResponse.json(
-      { error: "Error al crear el presupuesto" },
+      { 
+        error: "Error al crear el presupuesto",
+        details: errorMessage,
+        code: errorCode
+      },
       { status: 500 }
     );
   }

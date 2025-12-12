@@ -26,3 +26,4 @@ $newContent | Out-File -FilePath ".env" -Encoding UTF8 -NoNewline
 Write-Host "✅ Archivo .env actualizado correctamente" -ForegroundColor Green
 
 
+

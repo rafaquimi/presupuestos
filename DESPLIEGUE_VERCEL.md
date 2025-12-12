@@ -123,3 +123,4 @@ Tu aplicación estará disponible públicamente en Vercel, usando Supabase como 
 **URL de ejemplo**: `https://presupuestos-sibox.vercel.app`
 
 
+
