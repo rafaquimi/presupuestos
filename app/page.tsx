@@ -5,18 +5,24 @@ import AdminLayout from "@/components/AdminLayout";
 
 // Forzar renderizado dinámico (no estático durante el build)
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function getPresupuestos() {
-  const presupuestos = await prisma.presupuesto.findMany({
-    include: {
-      cliente: true,
-      productos: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-  return presupuestos;
+  try {
+    const presupuestos = await prisma.presupuesto.findMany({
+      include: {
+        cliente: true,
+        productos: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return presupuestos;
+  } catch (error) {
+    console.error("Error al obtener presupuestos:", error);
+    return [];
+  }
 }
 
 type PresupuestoConRelaciones = Awaited<ReturnType<typeof getPresupuestos>>[0];
