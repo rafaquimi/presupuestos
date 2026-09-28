@@ -45,4 +45,4 @@ next-env.d.ts
 # database
 *.db
 *.db-journal
-prisma/migrations
+# Las migraciones forman parte del código y deben versionarse.

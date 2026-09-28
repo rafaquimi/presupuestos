@@ -6,24 +6,30 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
-    "seed": "node scripts/seed.js",
+    "seed": "tsx prisma/seed.ts",
     "check-env": "node scripts/check-env.js",
-    "deploy:prepare": "npm run check-env && npx prisma db push && npx prisma generate"
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed"
   },
   "prisma": {
     "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "@react-pdf/renderer": "^4.3.1",
+    "@react-pdf/renderer": "^4.9.0",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.12",
     "lucide-react": "^0.554.0",
-    "next": "16.0.3",
-    "nodemailer": "^7.0.10",
+    "next": "16.3.6",
+    "nodemailer": "^10.0.12",
     "prisma": "^5.22.0",
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

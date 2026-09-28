@@ -1,225 +1,36 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { Download, Calendar, Mail, Phone, Building, User } from "lucide-react";
-import Image from "next/image";
-import DescargarPDFButton from "./DescargarPDFButton";
+import { Download, ShieldCheck } from "lucide-react";
 import Logo from "@/components/Logo";
+import { getPublicPresupuesto } from "@/lib/public-presupuesto";
+import { getConfiguracion } from "@/lib/configuracion";
 
-// Forzar renderizado dinámico
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+export const metadata = { robots: { index: false, follow: false } };
 
-async function getPresupuesto(id: string) {
-  const presupuesto = await prisma.presupuesto.findUnique({
-    where: { id },
-    include: {
-      cliente: true,
-      productos: true,
-    },
-  });
-
-  return presupuesto;
-}
-
-type PresupuestoConRelaciones = NonNullable<Awaited<ReturnType<typeof getPresupuesto>>>;
-type ProductoType = PresupuestoConRelaciones['productos'][0];
-
-export default async function VerPresupuestoPublico({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const presupuesto = await getPresupuesto(id);
-
-  if (!presupuesto) {
-    notFound();
-  }
+export default async function VerPresupuesto({ params }: { params: Promise<{ id: string }> }) {
+  const { id: token } = await params;
+  const [p, config] = await Promise.all([getPublicPresupuesto(token), getConfiguracion()]);
+  if (!p) notFound();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Logo de la empresa */}
-        <div className="mb-6 flex justify-center">
-          <Logo size="md" />
-        </div>
+    <main className="min-h-screen bg-slate-50 py-6 sm:py-10">
+      <div className="container-app max-w-4xl">
+        <header className="mb-6 flex items-center justify-between gap-4 mobile-stack"><Logo publicView /><span className="flex items-center gap-2 text-sm font-semibold text-green-700"><ShieldCheck size={17} /> Enlace seguro</span></header>
+        <section className="card mb-5 p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-5 mobile-stack"><div><p className="text-sm font-bold uppercase tracking-wide text-blue-700">Presupuesto</p><h1 className="mt-1 text-3xl font-extrabold">{p.numero}</h1><p className="muted mt-2">{p.createdAt.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}</p></div><div className="text-left sm:text-right"><p className="muted text-sm">Total con impuestos</p><p className="text-3xl font-extrabold text-blue-700">{p.total.toFixed(2)} €</p></div></div>
+          <div className="mt-6"><a className="btn btn-primary" href={`/api/public/presupuestos/${encodeURIComponent(token)}/pdf`}><Download size={18} /> Descargar PDF</a></div>
+        </section>
 
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 lg:p-8 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                Presupuesto #{presupuesto.numero}
-              </h1>
-              <p className="text-gray-600 text-sm md:text-base">
-                {new Date(presupuesto.createdAt).toLocaleDateString("es-ES", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            </div>
-            <div className="w-full sm:w-auto sm:text-right">
-              <div className="text-sm text-gray-600 mb-1">Total</div>
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">
-                €{presupuesto.total.toFixed(2)}
-              </div>
-            </div>
-          </div>
+        <section className="card mb-5 p-6"><h2 className="text-lg font-extrabold">Preparado para</h2><p className="mt-2 text-xl font-bold">{p.clienteNombre}</p>{p.clienteEmpresa && <p className="muted">{p.clienteEmpresa}</p>}</section>
 
-          <DescargarPDFButton presupuestoId={presupuesto.id} />
-        </div>
+        <section className="card mb-5 p-6"><h2 className="mb-5 text-xl font-extrabold">Productos y servicios</h2><div className="space-y-4">{p.productos.map((product) => <article key={product.id} className="rounded-xl border border-slate-200 p-4 sm:p-5"><div className="flex justify-between gap-4 mobile-stack"><div className="min-w-0"><h3 className="text-lg font-extrabold">{product.nombre}</h3>{product.descripcion && <p className="muted mt-1">{product.descripcion}</p>}{product.caracteristicas && <ul className="mt-3 space-y-1 text-sm text-slate-600">{product.caracteristicas.split("\n").filter(Boolean).map((line, index) => <li key={index}>• {line}</li>)}</ul>}</div><div className="whitespace-nowrap text-right"><strong className="text-lg text-blue-700">{product.precio.mul(product.cantidad).toFixed(2)} €</strong><p className="muted text-sm">{product.cantidad} × {product.precio.toFixed(2)} €</p></div></div></article>)}</div></section>
 
-        {/* Información del Cliente */}
-        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4">
-            Información del Cliente
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-600">Nombre</div>
-                <div className="font-medium">{presupuesto.cliente.nombre}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-600">Email</div>
-                <div className="font-medium">{presupuesto.cliente.email}</div>
-              </div>
-            </div>
-            {presupuesto.cliente.telefono && (
-              <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-600">Teléfono</div>
-                  <div className="font-medium">
-                    {presupuesto.cliente.telefono}
-                  </div>
-                </div>
-              </div>
-            )}
-            {presupuesto.cliente.empresa && (
-              <div className="flex items-center gap-3">
-                <Building className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-600">Empresa</div>
-                  <div className="font-medium">
-                    {presupuesto.cliente.empresa}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {p.notas && <section className="card mb-5 p-6"><h2 className="mb-3 text-lg font-extrabold">Notas</h2><p className="whitespace-pre-line text-slate-600">{p.notas}</p></section>}
 
-        {/* Productos */}
-        <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6">
-            Productos Incluidos
-          </h2>
-          <div className="space-y-6">
-            {presupuesto.productos.map((producto: ProductoType, index: number) => (
-              <div
-                key={producto.id}
-                className="border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                  {producto.imagenUrl && (
-                    <div className="flex-shrink-0 w-full md:w-auto flex justify-center md:justify-start">
-                      <Image
-                        src={producto.imagenUrl}
-                        alt={producto.nombre}
-                        width={200}
-                        height={200}
-                        className="rounded-lg object-cover shadow-md max-w-full h-auto"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-grow">
-                    <h3 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
-                      {index + 1}. {producto.nombre}
-                    </h3>
-                    {producto.descripcion && (
-                      <p className="text-gray-600 mb-4 text-base md:text-lg">
-                        {producto.descripcion}
-                      </p>
-                    )}
-                    {producto.caracteristicas && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                          Características:
-                        </h4>
-                        <ul className="space-y-2">
-                          {producto.caracteristicas
-                            .split("\n")
-                            .filter((c: string) => c.trim())
-                            .map((caracteristica: string, idx: number) => (
-                              <li
-                                key={idx}
-                                className="flex items-start gap-2 text-gray-700 text-sm md:text-base"
-                              >
-                                <span className="text-blue-600 mt-1 flex-shrink-0">✓</span>
-                                <span className="break-words">{caracteristica.trim()}</span>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-4 pt-4 border-t border-gray-200">
-                      <div className="text-gray-600 text-base md:text-lg">
-                        Cantidad: <span className="font-semibold">{producto.cantidad}</span> x €
-                        {producto.precio.toFixed(2)}
-                      </div>
-                      <div className="text-xl md:text-2xl font-bold text-blue-600">
-                        €{(producto.precio * producto.cantidad).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <section className="card ml-auto max-w-md p-6"><div className="space-y-2"><div className="flex justify-between"><span>Subtotal</span><span>{p.subtotal.toFixed(2)} €</span></div><div className="flex justify-between"><span>IVA ({p.ivaPorcentaje.toFixed(2)}%)</span><span>{p.iva.toFixed(2)} €</span></div><div className="flex justify-between border-t pt-4 text-xl font-extrabold text-blue-700"><span>Total</span><span>{p.total.toFixed(2)} €</span></div></div></section>
 
-        {/* Notas */}
-        {presupuesto.notas && (
-          <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4">
-              Información Adicional
-            </h2>
-            <p className="text-gray-600 whitespace-pre-wrap text-base md:text-lg">
-              {presupuesto.notas}
-            </p>
-          </div>
-        )}
-
-        {/* Total Final */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg p-6 md:p-8 text-white">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-xl md:text-2xl font-bold mb-2">Total del Presupuesto</h2>
-              <p className="text-blue-100">IVA incluido</p>
-            </div>
-            <div className="text-3xl md:text-4xl lg:text-5xl font-bold">
-              €{presupuesto.total.toFixed(2)}
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center text-gray-600">
-          <p className="text-sm">
-            Si tienes alguna pregunta sobre este presupuesto, no dudes en
-            contactarnos.
-          </p>
-          <p className="text-sm mt-2">
-            Este presupuesto es válido por 30 días desde la fecha de emisión.
-          </p>
-        </div>
+        <footer className="py-8 text-center text-sm text-slate-500">{config.empresaNombre} · Documento válido durante {config.validezDias} días</footer>
       </div>
-    </div>
+    </main>
   );
 }
-

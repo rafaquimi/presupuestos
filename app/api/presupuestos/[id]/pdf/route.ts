@@ -1,46 +1,54 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
+import { prisma } from "@/lib/prisma";
+import { getConfiguracion } from "@/lib/configuracion";
 import { PresupuestoPDF } from "@/lib/pdf-generator";
+import { requireApiUser, unauthorized } from "@/lib/security";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const presupuesto = await prisma.presupuesto.findUnique({
-      where: { id },
-      include: {
-        cliente: true,
-        productos: true,
-      },
-    });
-
-    if (!presupuesto) {
-      return NextResponse.json(
-        { error: "Presupuesto no encontrado" },
-        { status: 404 }
-      );
-    }
-
-    // Generar PDF usando renderToBuffer
-    const pdfDoc = PresupuestoPDF({ presupuesto });
-    const pdfBuffer = await renderToBuffer(pdfDoc);
-
-    // Retornar PDF
-    return new NextResponse(pdfBuffer as unknown as BodyInit, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="presupuesto-${presupuesto.numero}.pdf"`,
-      },
-    });
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    return NextResponse.json(
-      { error: "Error al generar el PDF" },
-      { status: 500 }
-    );
-  }
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireApiUser())) return unauthorized();
+  const { id } = await params;
+  const [presupuesto, configuracion] = await Promise.all([
+    prisma.presupuesto.findUnique({ where: { id }, include: { productos: true } }),
+    getConfiguracion(),
+  ]);
+  if (!presupuesto) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+  const serializado = {
+    numero: presupuesto.numero,
+    clienteNombre: presupuesto.clienteNombre,
+    clienteEmail: presupuesto.clienteEmail,
+    clienteTelefono: presupuesto.clienteTelefono,
+    clienteEmpresa: presupuesto.clienteEmpresa,
+    notas: presupuesto.notas,
+    subtotal: presupuesto.subtotal.toNumber(),
+    ivaPorcentaje: presupuesto.ivaPorcentaje.toNumber(),
+    iva: presupuesto.iva.toNumber(),
+    total: presupuesto.total.toNumber(),
+    createdAt: presupuesto.createdAt,
+    productos: presupuesto.productos.map((producto) => ({
+      nombre: producto.nombre,
+      descripcion: producto.descripcion,
+      caracteristicas: producto.caracteristicas,
+      precio: producto.precio.toNumber(),
+      cantidad: producto.cantidad,
+    })),
+  };
+  const pdf = await renderToBuffer(PresupuestoPDF({
+    presupuesto: serializado,
+    configuracion: {
+      empresaNombre: configuracion.empresaNombre,
+      nif: configuracion.nif,
+      direccion: configuracion.direccion,
+      telefono: configuracion.telefono,
+      email: configuracion.email,
+      validezDias: configuracion.validezDias,
+    },
+  }));
+  return new NextResponse(pdf as unknown as BodyInit, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${presupuesto.numero}.pdf"`,
+      "Cache-Control": "private, no-store",
+    },
+  });
 }
-

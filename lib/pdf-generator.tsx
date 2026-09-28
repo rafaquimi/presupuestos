@@ -1,341 +1,123 @@
-import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  Image,
-} from "@react-pdf/renderer";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+
+type PdfProducto = {
+  nombre: string;
+  descripcion: string;
+  caracteristicas: string;
+  precio: number;
+  cantidad: number;
+};
+
+export type PdfPresupuesto = {
+  numero: string;
+  clienteNombre: string;
+  clienteEmail: string;
+  clienteTelefono?: string | null;
+  clienteEmpresa?: string | null;
+  notas?: string | null;
+  subtotal: number;
+  ivaPorcentaje: number;
+  iva: number;
+  total: number;
+  createdAt: Date | string;
+  productos: PdfProducto[];
+};
+
+export type PdfConfiguracion = {
+  empresaNombre: string;
+  nif?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  validezDias: number;
+};
 
 const styles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontSize: 12,
-    fontFamily: "Helvetica",
-  },
-  header: {
-    marginBottom: 30,
-    borderBottomWidth: 2,
-    borderBottomColor: "#2563eb",
-    borderBottomStyle: "solid",
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1e40af",
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#6b7280",
-    marginBottom: 10,
-  },
-  total: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2563eb",
-    textAlign: "right",
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#1f2937",
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    borderBottomStyle: "solid",
-    paddingBottom: 5,
-  },
-  row: {
-    flexDirection: "row",
-    marginBottom: 5,
-  },
-  label: {
-    fontSize: 10,
-    color: "#6b7280",
-    width: 100,
-  },
-  value: {
-    fontSize: 10,
-    color: "#1f2937",
-    flex: 1,
-  },
-  producto: {
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: "#f9fafb",
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderStyle: "solid",
-  },
-  productoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  productoNombre: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#1f2937",
-    flex: 1,
-  },
-  productoPrecio: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#2563eb",
-  },
-  productoDescripcion: {
-    fontSize: 10,
-    color: "#4b5563",
-    marginBottom: 8,
-  },
-  caracteristicasTitle: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 5,
-  },
-  caracteristica: {
-    fontSize: 9,
-    color: "#4b5563",
-    marginLeft: 10,
-    marginBottom: 3,
-  },
-  productoFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#d1d5db",
-    borderTopStyle: "solid",
-  },
-  cantidad: {
-    fontSize: 10,
-    color: "#6b7280",
-  },
-  subtotal: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  totalSection: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#eff6ff",
-    borderRadius: 5,
-  },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1e40af",
-  },
-  totalValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2563eb",
-  },
-  notas: {
-    fontSize: 10,
-    color: "#4b5563",
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: "#fef3c7",
-    borderRadius: 5,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 30,
-    left: 40,
-    right: 40,
-    fontSize: 9,
-    color: "#9ca3af",
-    textAlign: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    borderTopStyle: "solid",
-    paddingTop: 10,
-  },
-  productoImage: {
-    width: 120,
-    height: 120,
-    objectFit: "contain",
-    marginBottom: 10,
-    borderRadius: 5,
-  },
+  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#172033" },
+  header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 28 },
+  title: { fontSize: 22, fontWeight: 700, color: "#1d4ed8" },
+  subtitle: { marginTop: 5, color: "#64748b" },
+  right: { textAlign: "right" },
+  section: { marginBottom: 18 },
+  sectionTitle: { fontSize: 11, fontWeight: 700, marginBottom: 7, color: "#334155" },
+  box: { border: "1 solid #dbe3ef", borderRadius: 5, padding: 10 },
+  product: { borderBottom: "1 solid #e2e8f0", paddingVertical: 9 },
+  productLast: { paddingTop: 9 },
+  row: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  productName: { fontSize: 11, fontWeight: 700, flexGrow: 1 },
+  muted: { color: "#64748b", marginTop: 3, lineHeight: 1.4 },
+  totals: { marginLeft: "auto", width: 230, marginTop: 18 },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
+  grandTotal: { flexDirection: "row", justifyContent: "space-between", paddingTop: 8, marginTop: 5, borderTop: "1 solid #94a3b8", fontSize: 14, fontWeight: 700, color: "#1d4ed8" },
+  footer: { position: "absolute", left: 40, right: 40, bottom: 28, textAlign: "center", color: "#94a3b8", fontSize: 8 },
 });
 
-interface PresupuestoPDFProps {
-  presupuesto: {
-    numero: string;
-    total: number;
-    notas: string | null;
-    createdAt: Date;
-    cliente: {
-      nombre: string;
-      email: string;
-      telefono: string | null;
-      empresa: string | null;
-    };
-    productos: Array<{
-      nombre: string;
-      descripcion: string;
-      caracteristicas: string;
-      precio: number;
-      cantidad: number;
-      imagenUrl: string | null;
-    }>;
-  };
-}
+const money = (value: number) => `${value.toFixed(2)} EUR`;
 
-export function PresupuestoPDF({ presupuesto }: PresupuestoPDFProps) {
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("es-ES", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || "Tu Tienda de Informática";
-
+export function PresupuestoPDF({ presupuesto, configuracion }: { presupuesto: PdfPresupuesto; configuracion: PdfConfiguracion }) {
+  const date = new Date(presupuesto.createdAt).toLocaleDateString("es-ES");
   return (
-    <Document>
+    <Document title={`Presupuesto ${presupuesto.numero}`} author={configuracion.empresaNombre}>
       <Page size="A4" style={styles.page}>
-        {/* Header con Logo */}
         <View style={styles.header}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            {/* Nombre de empresa */}
-            <View>
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "#1e40af", marginBottom: 2 }}>
-                {companyName}
-              </Text>
-              <Text style={styles.subtitle}>Presupuesto #{presupuesto.numero}</Text>
-              <Text style={styles.subtitle}>{formatDate(presupuesto.createdAt)}</Text>
-            </View>
-            {/* Total a la derecha */}
-            <View>
-              <Text style={{ fontSize: 10, color: "#6b7280", textAlign: "right" }}>
-                Total
-              </Text>
-              <Text style={styles.total}>€{presupuesto.total.toFixed(2)}</Text>
-            </View>
+          <View>
+            <Text style={styles.title}>{configuracion.empresaNombre}</Text>
+            {configuracion.nif && <Text style={styles.subtitle}>NIF: {configuracion.nif}</Text>}
+            {configuracion.direccion && <Text style={styles.subtitle}>{configuracion.direccion}</Text>}
+            {configuracion.telefono && <Text style={styles.subtitle}>{configuracion.telefono}</Text>}
+            {configuracion.email && <Text style={styles.subtitle}>{configuracion.email}</Text>}
           </View>
-          <Text style={[styles.title, { marginTop: 10 }]}>Presupuesto #{presupuesto.numero}</Text>
+          <View style={styles.right}>
+            <Text style={{ fontSize: 16, fontWeight: 700 }}>PRESUPUESTO</Text>
+            <Text style={styles.subtitle}>{presupuesto.numero}</Text>
+            <Text style={styles.subtitle}>{date}</Text>
+          </View>
         </View>
 
-        {/* Información del Cliente */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información del Cliente</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Nombre:</Text>
-            <Text style={styles.value}>{presupuesto.cliente.nombre}</Text>
+          <Text style={styles.sectionTitle}>CLIENTE</Text>
+          <View style={styles.box}>
+            <Text>{presupuesto.clienteNombre}</Text>
+            {presupuesto.clienteEmpresa && <Text style={styles.muted}>{presupuesto.clienteEmpresa}</Text>}
+            <Text style={styles.muted}>{presupuesto.clienteEmail}</Text>
+            {presupuesto.clienteTelefono && <Text style={styles.muted}>{presupuesto.clienteTelefono}</Text>}
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Email:</Text>
-            <Text style={styles.value}>{presupuesto.cliente.email}</Text>
-          </View>
-          {presupuesto.cliente.telefono && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Teléfono:</Text>
-              <Text style={styles.value}>{presupuesto.cliente.telefono}</Text>
-            </View>
-          )}
-          {presupuesto.cliente.empresa && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Empresa:</Text>
-              <Text style={styles.value}>{presupuesto.cliente.empresa}</Text>
-            </View>
-          )}
         </View>
 
-        {/* Productos */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Productos</Text>
-          {presupuesto.productos.map((producto, index) => (
-            <View key={index} style={styles.producto}>
-              {producto.imagenUrl && (
-                <Image
-                  src={producto.imagenUrl}
-                  style={styles.productoImage}
-                />
-              )}
-              <View style={styles.productoHeader}>
-                <Text style={styles.productoNombre}>
-                  {index + 1}. {producto.nombre}
-                </Text>
-                <Text style={styles.productoPrecio}>
-                  €{producto.precio.toFixed(2)}
-                </Text>
-              </View>
-
-              {producto.descripcion && (
-                <Text style={styles.productoDescripcion}>
-                  {producto.descripcion}
-                </Text>
-              )}
-
-              {producto.caracteristicas && (
-                <View>
-                  <Text style={styles.caracteristicasTitle}>Características:</Text>
-                  {producto.caracteristicas
-                    .split("\n")
-                    .filter((c) => c.trim())
-                    .map((caracteristica, idx) => (
-                      <Text key={idx} style={styles.caracteristica}>
-                        • {caracteristica.trim()}
-                      </Text>
-                    ))}
+          <Text style={styles.sectionTitle}>DETALLE</Text>
+          <View style={styles.box}>
+            {presupuesto.productos.map((producto, index) => (
+              <View key={`${producto.nombre}-${index}`} style={index === presupuesto.productos.length - 1 ? styles.productLast : styles.product} wrap={false}>
+                <View style={styles.row}>
+                  <Text style={styles.productName}>{producto.nombre}</Text>
+                  <Text>{producto.cantidad} x {money(producto.precio)}</Text>
+                  <Text>{money(producto.cantidad * producto.precio)}</Text>
                 </View>
-              )}
-
-              <View style={styles.productoFooter}>
-                <Text style={styles.cantidad}>
-                  Cantidad: {producto.cantidad} x €{producto.precio.toFixed(2)}
-                </Text>
-                <Text style={styles.subtotal}>
-                  €{(producto.precio * producto.cantidad).toFixed(2)}
-                </Text>
+                {producto.descripcion && <Text style={styles.muted}>{producto.descripcion}</Text>}
+                {producto.caracteristicas && <Text style={styles.muted}>{producto.caracteristicas}</Text>}
               </View>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
 
-        {/* Notas */}
         {presupuesto.notas && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notas Adicionales</Text>
-            <Text style={styles.notas}>{presupuesto.notas}</Text>
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.sectionTitle}>NOTAS</Text>
+            <View style={styles.box}><Text>{presupuesto.notas}</Text></View>
           </View>
         )}
 
-        {/* Total */}
-        <View style={styles.totalSection}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total del Presupuesto</Text>
-            <Text style={styles.totalValue}>€{presupuesto.total.toFixed(2)}</Text>
-          </View>
+        <View style={styles.totals} wrap={false}>
+          <View style={styles.totalRow}><Text>Subtotal</Text><Text>{money(presupuesto.subtotal)}</Text></View>
+          <View style={styles.totalRow}><Text>IVA ({presupuesto.ivaPorcentaje.toFixed(2)}%)</Text><Text>{money(presupuesto.iva)}</Text></View>
+          <View style={styles.grandTotal}><Text>Total</Text><Text>{money(presupuesto.total)}</Text></View>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={{ fontWeight: "bold", marginBottom: 5 }}>{companyName}</Text>
-          <Text>Este presupuesto es válido por 30 días desde la fecha de emisión.</Text>
-          <Text>Para cualquier consulta, no dude en contactarnos.</Text>
-        </View>
+        <Text style={styles.footer} fixed>
+          Presupuesto válido durante {configuracion.validezDias} días desde su fecha de emisión.
+        </Text>
       </Page>
     </Document>
   );
 }
-
