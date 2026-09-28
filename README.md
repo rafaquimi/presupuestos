@@ -16,7 +16,8 @@ Aplicación Next.js para crear, editar, compartir y enviar presupuestos. La reco
 
 ## Puesta en marcha
 
-Requisitos: Node.js 22 y una base PostgreSQL vacía.
+Requisitos: Node.js 22 y una base PostgreSQL vacía. Para Supabase usa el
+pool de transacciones en `DATABASE_URL` y la conexión directa en `DIRECT_URL`.
 
 ```bash
 npm ci
@@ -41,6 +42,12 @@ openssl rand -base64 48
 3. Ejecuta una vez `npx prisma migrate deploy` y `npm run seed` apuntando a producción.
 4. Importa este repositorio en Vercel.
 5. Establece `APP_URL` con el dominio HTTPS definitivo.
+
+El despliegue incluye un cron diario protegido por `CRON_SECRET` que ejecuta
+una consulta mínima de salud. En Vercel Hobby, un cron sólo puede ejecutarse
+una vez al día. Esta actividad reduce el riesgo de pausa por inactividad en un
+proyecto gratuito de Supabase, pero no sustituye una garantía de disponibilidad
+de un plan de pago.
 
 No utilices `prisma db push` en producción. Las migraciones versionadas son la fuente de verdad.
 

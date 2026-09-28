@@ -3,7 +3,12 @@
   "devCommand": "next dev",
   "installCommand": "npm ci",
   "framework": "nextjs",
-  "regions": ["cdg1"]
+  "regions": ["cdg1"],
+  "crons": [
+    {
+      "path": "/api/cron/keepalive",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }
-
 
