@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { presupuestoSchema } from "@/lib/validation";
+import { presupuestoSchema, presupuestoValidationMessages } from "@/lib/validation";
 import { calculateTotals, serializePresupuesto } from "@/lib/presupuestos";
 import { assertSameOrigin, csrfRejected, generatePublicToken, readJsonLimited, requireApiUser, unauthorized } from "@/lib/security";
 
@@ -22,7 +22,10 @@ export async function PATCH(request: Request, { params }: Context) {
   try {
     const parsed = presupuestoSchema.safeParse(await readJsonLimited(request));
     if (!parsed.success) {
-      return NextResponse.json({ error: "Revisa los datos del presupuesto", fields: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: "Revisa los datos del presupuesto", details: presupuestoValidationMessages(parsed.error) },
+        { status: 400 },
+      );
     }
     const data = parsed.data;
     const email = data.cliente.email.toLowerCase();

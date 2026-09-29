@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { presupuestoSchema } from "@/lib/validation";
+import { presupuestoSchema, presupuestoValidationMessages } from "@/lib/validation";
 import { calculateTotals, serializePresupuesto } from "@/lib/presupuestos";
 import { assertSameOrigin, csrfRejected, generatePublicToken, readJsonLimited, requireApiUser, unauthorized } from "@/lib/security";
 
@@ -21,8 +21,9 @@ export async function POST(request: Request) {
   try {
     const parsed = presupuestoSchema.safeParse(await readJsonLimited(request));
     if (!parsed.success) {
+      const details = presupuestoValidationMessages(parsed.error);
       return NextResponse.json(
-        { error: "Revisa los datos del presupuesto", fields: parsed.error.flatten() },
+        { error: "Revisa los datos del presupuesto", details },
         { status: 400 },
       );
     }

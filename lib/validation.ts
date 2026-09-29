@@ -66,3 +66,33 @@ export const configuracionSchema = z.object({
   ivaDefault: z.number().finite().min(0).max(100),
   validezDias: z.number().int().min(1).max(365),
 });
+
+const fieldLabels: Record<string, string> = {
+  cliente: "Cliente",
+  nombre: "nombre",
+  email: "correo",
+  telefono: "teléfono",
+  empresa: "empresa",
+  productos: "Productos",
+  descripcion: "descripción",
+  caracteristicas: "características",
+  precio: "precio",
+  cantidad: "cantidad",
+  imagenUrl: "URL de imagen",
+  notas: "Notas",
+  ivaPorcentaje: "IVA",
+  estado: "Estado",
+  publicExpiresAt: "Caducidad del enlace",
+};
+
+export function presupuestoValidationMessages(error: z.ZodError) {
+  return error.issues.map((issue) => {
+    const path = issue.path.map((part, index) => {
+      if (typeof part === "number" && issue.path[index - 1] === "productos") {
+        return `producto ${part + 1}`;
+      }
+      return fieldLabels[String(part)] || String(part);
+    });
+    return `${path.join(" · ") || "Formulario"}: ${issue.message}`;
+  });
+}

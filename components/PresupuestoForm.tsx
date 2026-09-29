@@ -47,6 +47,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
   const [expires, setExpires] = useState(initial?.publicExpiresAt ? new Date(initial.publicExpiresAt).toISOString().slice(0, 10) : "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [errorDetails, setErrorDetails] = useState<string[]>([]);
 
   const totals = useMemo(() => {
     const subtotal = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (Number(p.cantidad) || 0), 0);
@@ -62,6 +63,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
     event.preventDefault();
     setSaving(true);
     setError("");
+    setErrorDetails([]);
     try {
       const response = await fetch(initial ? `/api/presupuestos/${initial.id}` : "/api/presupuestos", {
         method: initial ? "PATCH" : "POST",
@@ -84,7 +86,12 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
         }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "No se pudo guardar");
+      if (!response.ok) {
+        if (Array.isArray(result.details)) {
+          setErrorDetails(result.details.filter((detail: unknown): detail is string => typeof detail === "string"));
+        }
+        throw new Error(result.error || "No se pudo guardar");
+      }
       router.push(`/presupuestos/${result.id}`);
       router.refresh();
     } catch (cause) {
@@ -97,7 +104,16 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">{error}</div>}
+      {error && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+          <p className="font-semibold">{error}</p>
+          {errorDetails.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              {errorDetails.map((detail) => <li key={detail}>{detail}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
 
       <section className="card p-5 sm:p-7">
         <h2 className="mb-5 text-xl font-extrabold">Cliente</h2>
