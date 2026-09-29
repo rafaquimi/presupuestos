@@ -3,8 +3,9 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { getConfiguracion } from "@/lib/configuracion";
 import { PresupuestoPDF } from "@/lib/pdf-generator";
 import { getPublicPresupuesto } from "@/lib/public-presupuesto";
+import { absoluteImageUrl } from "@/lib/images";
 
-export async function GET(_: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const [presupuesto, configuracion] = await Promise.all([getPublicPresupuesto(token), getConfiguracion()]);
   if (!presupuesto) return NextResponse.json({ error: "Enlace no válido o caducado" }, { status: 404 });
@@ -26,6 +27,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
       caracteristicas: producto.caracteristicas,
       precio: producto.precio.toNumber(),
       cantidad: producto.cantidad,
+      imagenUrl: absoluteImageUrl(producto.imagenUrl, request.url),
     })),
   };
   const pdf = await renderToBuffer(PresupuestoPDF({

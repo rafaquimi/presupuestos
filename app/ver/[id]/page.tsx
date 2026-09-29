@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { Download, ShieldCheck } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -23,7 +24,7 @@ export default async function VerPresupuesto({ params }: { params: Promise<{ id:
 
         <section className="card mb-5 p-6"><h2 className="text-lg font-extrabold">Preparado para</h2><p className="mt-2 text-xl font-bold">{p.clienteNombre}</p>{p.clienteEmpresa && <p className="muted">{p.clienteEmpresa}</p>}</section>
 
-        <section className="card mb-5 p-6"><h2 className="mb-5 text-xl font-extrabold">Productos y servicios</h2><div className="space-y-4">{p.productos.map((product) => <article key={product.id} className="rounded-xl border border-slate-200 p-4 sm:p-5"><div className="flex justify-between gap-4 mobile-stack"><div className="min-w-0"><h3 className="text-lg font-extrabold">{product.nombre}</h3>{product.descripcion && <p className="muted mt-1">{product.descripcion}</p>}{product.caracteristicas && <ul className="mt-3 space-y-1 text-sm text-slate-600">{product.caracteristicas.split("\n").filter(Boolean).map((line, index) => <li key={index}>• {line}</li>)}</ul>}</div><div className="whitespace-nowrap text-right"><strong className="text-lg text-blue-700">{product.precio.mul(product.cantidad).toFixed(2)} €</strong><p className="muted text-sm">{product.cantidad} × {product.precio.toFixed(2)} €</p></div></div></article>)}</div></section>
+        <section className="card mb-5 p-6"><h2 className="mb-5 text-xl font-extrabold">Productos y servicios</h2><div className="space-y-4">{p.productos.map((product) => <article key={product.id} className="rounded-xl border border-slate-200 p-4 sm:p-5"><div className="flex justify-between gap-4 mobile-stack">{product.imagenUrl && <img src={product.imagenUrl} alt="" className="h-28 w-28 shrink-0 rounded-lg object-cover" />}<div className="min-w-0 flex-1"><h3 className="text-lg font-extrabold">{product.nombre}</h3>{product.descripcion && <p className="muted mt-1">{product.descripcion}</p>}{product.caracteristicas && <ul className="mt-3 space-y-1 text-sm text-slate-600">{product.caracteristicas.split("\n").filter(Boolean).map((line, index) => <li key={index}>• {line}</li>)}</ul>}</div><div className="whitespace-nowrap text-right"><strong className="text-lg text-blue-700">{product.precio.mul(product.cantidad).toFixed(2)} €</strong><p className="muted text-sm">{product.cantidad} × {product.precio.toFixed(2)} €</p></div></div></article>)}</div></section>
 
         {p.notas && <section className="card mb-5 p-6"><h2 className="mb-3 text-lg font-extrabold">Notas</h2><p className="whitespace-pre-line text-slate-600">{p.notas}</p></section>}
 

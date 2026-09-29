@@ -1,4 +1,5 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+/* eslint-disable jsx-a11y/alt-text */
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 type PdfProducto = {
   nombre: string;
@@ -6,6 +7,7 @@ type PdfProducto = {
   caracteristicas: string;
   precio: number;
   cantidad: number;
+  imagenUrl?: string | null;
 };
 
 export type PdfPresupuesto = {
@@ -43,6 +45,9 @@ const styles = StyleSheet.create({
   box: { border: "1 solid #dbe3ef", borderRadius: 5, padding: 10 },
   product: { borderBottom: "1 solid #e2e8f0", paddingVertical: 9 },
   productLast: { paddingTop: 9 },
+  productContent: { flexDirection: "row", gap: 10 },
+  productImage: { width: 48, height: 48, objectFit: "cover", borderRadius: 4 },
+  productText: { flexGrow: 1, flexBasis: 0 },
   row: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   productName: { fontSize: 11, fontWeight: 700, flexGrow: 1 },
   muted: { color: "#64748b", marginTop: 3, lineHeight: 1.4 },
@@ -89,13 +94,18 @@ export function PresupuestoPDF({ presupuesto, configuracion }: { presupuesto: Pd
           <View style={styles.box}>
             {presupuesto.productos.map((producto, index) => (
               <View key={`${producto.nombre}-${index}`} style={index === presupuesto.productos.length - 1 ? styles.productLast : styles.product} wrap={false}>
-                <View style={styles.row}>
-                  <Text style={styles.productName}>{producto.nombre}</Text>
-                  <Text>{producto.cantidad} x {money(producto.precio)}</Text>
-                  <Text>{money(producto.cantidad * producto.precio)}</Text>
+                <View style={styles.productContent}>
+                  {producto.imagenUrl && <Image src={producto.imagenUrl} style={styles.productImage} />}
+                  <View style={styles.productText}>
+                    <View style={styles.row}>
+                      <Text style={styles.productName}>{producto.nombre}</Text>
+                      <Text>{producto.cantidad} x {money(producto.precio)}</Text>
+                      <Text>{money(producto.cantidad * producto.precio)}</Text>
+                    </View>
+                    {producto.descripcion && <Text style={styles.muted}>{producto.descripcion}</Text>}
+                    {producto.caracteristicas && <Text style={styles.muted}>{producto.caracteristicas}</Text>}
+                  </View>
                 </View>
-                {producto.descripcion && <Text style={styles.muted}>{producto.descripcion}</Text>}
-                {producto.caracteristicas && <Text style={styles.muted}>{producto.caracteristicas}</Text>}
               </View>
             ))}
           </View>

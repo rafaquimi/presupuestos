@@ -44,6 +44,7 @@ export const presupuestoSchema = z.object({
     empresa: optionalText(160),
   }),
   productos: z.array(productoSchema).min(1).max(50),
+  proveedor: optionalText(200),
   notas: optionalText(5000),
   ivaPorcentaje: z.number().finite().min(0).max(100),
   estado: z
@@ -79,6 +80,7 @@ const fieldLabels: Record<string, string> = {
   precio: "precio",
   cantidad: "cantidad",
   imagenUrl: "URL de imagen",
+  proveedor: "Proveedor interno",
   notas: "Notas",
   ivaPorcentaje: "IVA",
   estado: "Estado",

@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { ImagePlus, Plus, Save, Trash2 } from "lucide-react";
 
 type ProductoForm = {
   key: string;
@@ -20,6 +20,7 @@ export type PresupuestoInicial = {
   clienteEmail: string;
   clienteTelefono?: string | null;
   clienteEmpresa?: string | null;
+  proveedor?: string | null;
   notas?: string | null;
   ivaPorcentaje: number;
   estado: "BORRADOR" | "ENVIADO" | "ACEPTADO" | "RECHAZADO";
@@ -41,6 +42,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
     initial?.productos.map((p) => ({ ...p, key: p.id || crypto.randomUUID() })) || [emptyProduct()],
   );
   const [notas, setNotas] = useState(initial?.notas || "");
+  const [proveedor, setProveedor] = useState(initial?.proveedor || "");
   const [iva, setIva] = useState(initial?.ivaPorcentaje ?? defaultVat);
   const [estado, setEstado] = useState(initial?.estado || "BORRADOR");
   const [publicEnabled, setPublicEnabled] = useState(initial?.publicEnabled ?? true);
@@ -48,6 +50,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [errorDetails, setErrorDetails] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState("");
 
   const totals = useMemo(() => {
     const subtotal = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (Number(p.cantidad) || 0), 0);
@@ -57,6 +60,35 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
 
   function updateProduct(key: string, field: keyof ProductoForm, value: string | number) {
     setProductos((current) => current.map((p) => p.key === key ? { ...p, [field]: value } : p));
+  }
+
+  async function uploadImage(file: File, productKey: string) {
+    if (!file.type.startsWith("image/")) {
+      setError("Selecciona un archivo de imagen JPG, PNG o WebP");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setError("La imagen supera el máximo de 3 MB");
+      return;
+    }
+    setUploadingImage(productKey);
+    setError("");
+    setErrorDetails([]);
+    try {
+      const form = new FormData();
+      form.append("imagen", file);
+      const response = await fetch("/api/imagenes", { method: "POST", body: form });
+      const result = await response.json();
+      if (!response.ok || typeof result.url !== "string") {
+        throw new Error(result.error || "No se pudo subir la imagen");
+      }
+      updateProduct(productKey, "imagenUrl", result.url);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo subir la imagen");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setUploadingImage("");
+    }
   }
 
   async function submit(event: FormEvent) {
@@ -79,6 +111,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
             imagenUrl: product.imagenUrl,
           })),
           notas,
+          proveedor,
           ivaPorcentaje: Number(iva),
           estado,
           publicEnabled,
@@ -137,11 +170,53 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
                 <div className="sm:col-span-2"><label className="label">Características (una por línea)</label><textarea className="field" rows={4} maxLength={5000} value={product.caracteristicas} onChange={(e) => updateProduct(product.key, "caracteristicas", e.target.value)} /></div>
                 <div><label className="label">Precio sin IVA *</label><input className="field" type="number" min="0" max="10000000" step="0.01" required value={product.precio} onChange={(e) => updateProduct(product.key, "precio", Number(e.target.value))} /></div>
                 <div><label className="label">Cantidad *</label><input className="field" type="number" min="1" max="100000" step="1" required value={product.cantidad} onChange={(e) => updateProduct(product.key, "cantidad", Number(e.target.value))} /></div>
-                <div className="sm:col-span-2"><label className="label">URL HTTPS de imagen</label><input className="field" type="url" maxLength={2000} placeholder="Debe pertenecer a un dominio autorizado" value={product.imagenUrl} onChange={(e) => updateProduct(product.key, "imagenUrl", e.target.value)} /><p className="muted mt-1 text-xs">Los dominios permitidos se configuran en ALLOWED_IMAGE_HOSTS.</p></div>
+                <div className="sm:col-span-2">
+                  <label className="label">Imagen del producto</label>
+                  <input
+                    className="field"
+                    type="text"
+                    maxLength={2000}
+                    placeholder="Pega una URL o una imagen desde el portapapeles"
+                    value={product.imagenUrl}
+                    onChange={(e) => updateProduct(product.key, "imagenUrl", e.target.value)}
+                    onPaste={(event) => {
+                      const image = Array.from(event.clipboardData.files).find((file) => file.type.startsWith("image/"));
+                      if (image) {
+                        event.preventDefault();
+                        void uploadImage(image, product.key);
+                      }
+                    }}
+                  />
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <label className="btn btn-secondary cursor-pointer">
+                      <ImagePlus size={17} />
+                      {uploadingImage === product.key ? "Subiendo…" : "Buscar imagen en el PC"}
+                      <input
+                        className="sr-only"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={Boolean(uploadingImage)}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadImage(file, product.key);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    {product.imagenUrl && <span className="text-sm font-semibold text-green-700">Imagen preparada</span>}
+                  </div>
+                  <p className="muted mt-2 text-xs">JPG, PNG o WebP, máximo 3 MB. También puedes copiar una imagen y pegarla en el campo.</p>
+                </div>
               </div>
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="card p-5 sm:p-7">
+        <h2 className="mb-2 text-xl font-extrabold">Información interna</h2>
+        <p className="muted mb-5 text-sm">Estos datos solo aparecen en el panel de administración.</p>
+        <div><label className="label">Proveedor</label><input className="field" maxLength={200} value={proveedor} onChange={(e) => setProveedor(e.target.value)} placeholder="Nombre o referencia del proveedor" /></div>
       </section>
 
       <section className="card p-5 sm:p-7">

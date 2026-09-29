@@ -56,6 +56,7 @@ export async function POST(request: Request) {
           clienteEmail: email,
           clienteTelefono: data.cliente.telefono || null,
           clienteEmpresa: data.cliente.empresa || null,
+          proveedor: data.proveedor || null,
           notas: data.notas || null,
           estado: data.estado || "BORRADOR",
           ivaPorcentaje: data.ivaPorcentaje,

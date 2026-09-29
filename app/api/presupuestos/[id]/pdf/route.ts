@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getConfiguracion } from "@/lib/configuracion";
 import { PresupuestoPDF } from "@/lib/pdf-generator";
 import { requireApiUser, unauthorized } from "@/lib/security";
+import { absoluteImageUrl } from "@/lib/images";
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireApiUser())) return unauthorized();
   const { id } = await params;
   const [presupuesto, configuracion] = await Promise.all([
@@ -31,6 +32,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       caracteristicas: producto.caracteristicas,
       precio: producto.precio.toNumber(),
       cantidad: producto.cantidad,
+      imagenUrl: absoluteImageUrl(producto.imagenUrl, request.url),
     })),
   };
   const pdf = await renderToBuffer(PresupuestoPDF({
@@ -44,10 +46,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       validezDias: configuracion.validezDias,
     },
   }));
+  const inline = new URL(request.url).searchParams.get("view") === "1";
   return new NextResponse(pdf as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${presupuesto.numero}.pdf"`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${presupuesto.numero}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });

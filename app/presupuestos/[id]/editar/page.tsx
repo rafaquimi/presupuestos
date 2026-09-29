@@ -20,6 +20,7 @@ export default async function EditarPresupuestoPage({ params }: { params: Promis
     clienteEmail: presupuesto.clienteEmail,
     clienteTelefono: presupuesto.clienteTelefono,
     clienteEmpresa: presupuesto.clienteEmpresa,
+    proveedor: presupuesto.proveedor,
     notas: presupuesto.notas,
     ivaPorcentaje: presupuesto.ivaPorcentaje.toNumber(),
     estado: presupuesto.estado,

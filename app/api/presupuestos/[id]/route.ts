@@ -48,6 +48,7 @@ export async function PATCH(request: Request, { params }: Context) {
           clienteEmail: email,
           clienteTelefono: data.cliente.telefono || null,
           clienteEmpresa: data.cliente.empresa || null,
+          proveedor: data.proveedor || null,
           notas: data.notas || null,
           estado: data.estado || current.estado,
           ivaPorcentaje: data.ivaPorcentaje,

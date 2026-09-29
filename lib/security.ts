@@ -41,6 +41,7 @@ export function loginAttemptKey(request: Request, email: string) {
 
 export function isAllowedImageUrl(value?: string | null) {
   if (!value) return true;
+  if (/^\/api\/public\/imagenes\/[A-Za-z0-9_-]{40,60}$/.test(value)) return true;
   try {
     const url = new URL(value);
     if (url.protocol !== "https:") return false;
