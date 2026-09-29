@@ -1,76 +1,19 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Home, FileText, Plus } from "lucide-react";
+import { Settings, Users } from "lucide-react";
 import Logo from "./Logo";
+import LogoutButton from "./LogoutButton";
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-      router.refresh();
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
-  };
-
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo y título */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <Logo size="sm" />
-            </Link>
-          </div>
-
-          {/* Navegación central */}
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === "/"
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              <Home className="w-4 h-4" />
-              Inicio
-            </Link>
-            <Link
-              href="/presupuestos/nuevo"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === "/presupuestos/nuevo"
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              Nuevo Presupuesto
-            </Link>
-          </div>
-
-          {/* Botón de logout */}
-          <div className="flex items-center">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
+    <header className="border-b border-slate-200 bg-white">
+      <div className="container-app flex min-h-16 items-center justify-between gap-4 py-2 mobile-stack">
+        <Logo />
+        <nav className="flex flex-wrap items-center justify-center gap-2" aria-label="Principal">
+          <Link href="/clientes" className="btn btn-ghost"><Users size={17} /> Clientes</Link>
+          <Link href="/configuracion" className="btn btn-ghost"><Settings size={17} /> Configuración</Link>
+          <LogoutButton />
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }
-
-
-

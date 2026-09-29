@@ -1,110 +1,83 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { cliente, productos, notas, total } = body;
-
-    // Validar datos requeridos
-    if (!cliente || !cliente.email || !cliente.nombre) {
-      return NextResponse.json(
-        { error: "Datos del cliente incompletos (nombre y email requeridos)" },
-        { status: 400 }
-      );
-    }
-
-    if (!productos || !Array.isArray(productos) || productos.length === 0) {
-      return NextResponse.json(
-        { error: "Debe incluir al menos un producto" },
-        { status: 400 }
-      );
-    }
-
-    // Generar número de presupuesto único
-    const count = await prisma.presupuesto.count();
-    const numero = `PRES-${String(count + 1).padStart(6, "0")}`;
-
-    // Crear o buscar cliente
-    let clienteDb = await prisma.cliente.findFirst({
-      where: { email: cliente.email },
-    });
-
-    if (!clienteDb) {
-      clienteDb = await prisma.cliente.create({
-        data: {
-          nombre: cliente.nombre,
-          email: cliente.email,
-          telefono: cliente.telefono || "",
-          empresa: cliente.empresa || "",
-        },
-      });
-    }
-
-    // Crear presupuesto con productos
-    const presupuesto = await prisma.presupuesto.create({
-      data: {
-        numero,
-        clienteId: clienteDb.id,
-        total,
-        notas: notas || "",
-        estado: "borrador",
-        productos: {
-          create: productos.map((p: any) => ({
-            nombre: p.nombre,
-            descripcion: p.descripcion || "",
-            caracteristicas: p.caracteristicas || "",
-            precio: p.precio,
-            cantidad: p.cantidad,
-            imagenUrl: p.imagenUrl || "",
-          })),
-        },
-      },
-      include: {
-        cliente: true,
-        productos: true,
-      },
-    });
-
-    return NextResponse.json(presupuesto, { status: 201 });
-  } catch (error: any) {
-    console.error("Error creating presupuesto:", error);
-    
-    // Devolver mensaje de error más específico
-    const errorMessage = error?.message || "Error desconocido";
-    const errorCode = error?.code || "UNKNOWN";
-    
-    return NextResponse.json(
-      { 
-        error: "Error al crear el presupuesto",
-        details: errorMessage,
-        code: errorCode
-      },
-      { status: 500 }
-    );
-  }
-}
+import { presupuestoSchema } from "@/lib/validation";
+import { calculateTotals, serializePresupuesto } from "@/lib/presupuestos";
+import { assertSameOrigin, csrfRejected, generatePublicToken, readJsonLimited, requireApiUser, unauthorized } from "@/lib/security";
 
 export async function GET() {
-  try {
-    const presupuestos = await prisma.presupuesto.findMany({
-      include: {
-        cliente: true,
-        productos: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    return NextResponse.json(presupuestos);
-  } catch (error) {
-    console.error("Error fetching presupuestos:", error);
-    return NextResponse.json(
-      { error: "Error al obtener presupuestos" },
-      { status: 500 }
-    );
-  }
+  if (!(await requireApiUser())) return unauthorized();
+  const presupuestos = await prisma.presupuesto.findMany({
+    include: { productos: true },
+    orderBy: { createdAt: "desc" },
+    take: 250,
+  });
+  return NextResponse.json(presupuestos.map(serializePresupuesto));
 }
 
+export async function POST(request: Request) {
+  if (!(await requireApiUser())) return unauthorized();
+  if (!assertSameOrigin(request)) return csrfRejected();
 
+  try {
+    const parsed = presupuestoSchema.safeParse(await readJsonLimited(request));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Revisa los datos del presupuesto", fields: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
+    const data = parsed.data;
+    const email = data.cliente.email.toLowerCase();
+    const totals = calculateTotals(data.productos, data.ivaPorcentaje);
+    const year = new Date().getFullYear();
+
+    const presupuesto = await prisma.$transaction(async (tx) => {
+      const counter = await tx.contador.upsert({
+        where: { id: `presupuestos-${year}` },
+        create: { id: `presupuestos-${year}`, valor: 1 },
+        update: { valor: { increment: 1 } },
+      });
+      const cliente = await tx.cliente.upsert({
+        where: { email },
+        create: { ...data.cliente, email },
+        update: { ...data.cliente, email },
+      });
+
+      return tx.presupuesto.create({
+        data: {
+          numero: `PRE-${year}-${String(counter.valor).padStart(6, "0")}`,
+          publicToken: generatePublicToken(),
+          publicEnabled: data.publicEnabled ?? true,
+          publicExpiresAt: data.publicExpiresAt ? new Date(data.publicExpiresAt) : null,
+          clienteId: cliente.id,
+          clienteNombre: data.cliente.nombre,
+          clienteEmail: email,
+          clienteTelefono: data.cliente.telefono || null,
+          clienteEmpresa: data.cliente.empresa || null,
+          notas: data.notas || null,
+          estado: data.estado || "BORRADOR",
+          ivaPorcentaje: data.ivaPorcentaje,
+          ...totals,
+          productos: {
+            create: data.productos.map((producto) => ({
+              nombre: producto.nombre,
+              descripcion: producto.descripcion || "",
+              caracteristicas: producto.caracteristicas || "",
+              precio: producto.precio,
+              cantidad: producto.cantidad,
+              imagenUrl: producto.imagenUrl || null,
+            })),
+          },
+        },
+        include: { productos: true },
+      });
+    });
+
+    return NextResponse.json(serializePresupuesto(presupuesto), { status: 201 });
+  } catch (error) {
+    console.error("Error creando presupuesto", error);
+    const status = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 500;
+    return NextResponse.json({ error: "No se pudo crear el presupuesto" }, { status });
+  }
+}

@@ -1,140 +1,63 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { PlusCircle, FileText, Calendar, User } from "lucide-react";
+import { FileCheck2, FileText, Plus, Search, Send } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
+import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 
-// Forzar renderizado dinámico (no estático durante el build)
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
-async function getPresupuestos() {
-  try {
-    const presupuestos = await prisma.presupuesto.findMany({
-      include: {
-        cliente: true,
-        productos: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-    return presupuestos;
-  } catch (error) {
-    console.error("Error al obtener presupuestos:", error);
-    return [];
-  }
-}
+const stateLabel = { BORRADOR: "Borrador", ENVIADO: "Enviado", ACEPTADO: "Aceptado", RECHAZADO: "Rechazado" } as const;
 
-type PresupuestoConRelaciones = Awaited<ReturnType<typeof getPresupuestos>>[0];
-
-export default async function Home() {
-  const presupuestos = await getPresupuestos();
+export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; estado?: string }> }) {
+  await requireUser();
+  const filters = await searchParams;
+  const q = filters.q?.trim().slice(0, 100) || "";
+  const allowedStates = ["BORRADOR", "ENVIADO", "ACEPTADO", "RECHAZADO"] as const;
+  const estado = allowedStates.find((item) => item === filters.estado);
+  const where = {
+    ...(estado ? { estado } : {}),
+    ...(q ? { OR: [
+      { numero: { contains: q, mode: "insensitive" as const } },
+      { clienteNombre: { contains: q, mode: "insensitive" as const } },
+      { clienteEmail: { contains: q, mode: "insensitive" as const } },
+      { clienteEmpresa: { contains: q, mode: "insensitive" as const } },
+    ] } : {}),
+  };
+  const [presupuestos, total, enviados, aceptados] = await Promise.all([
+    prisma.presupuesto.findMany({ where, include: { _count: { select: { productos: true } } }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.presupuesto.count(),
+    prisma.presupuesto.count({ where: { estado: "ENVIADO" } }),
+    prisma.presupuesto.count({ where: { estado: "ACEPTADO" } }),
+  ]);
 
   return (
     <AdminLayout>
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Gestor de Presupuestos
-          </h1>
-          <p className="text-gray-600">
-            Crea y gestiona presupuestos para tus clientes
-          </p>
-        </div>
+      <div className="container-app py-8">
+        <div className="mb-7 flex items-end justify-between gap-4 mobile-stack"><div><h1 className="text-3xl font-extrabold">Panel de presupuestos</h1><p className="muted mt-2">Crea, comparte y controla todos los presupuestos.</p></div><Link href="/presupuestos/nuevo" className="btn btn-primary"><Plus size={18} /> Nuevo presupuesto</Link></div>
 
-        {/* Botón crear presupuesto */}
-        <div className="mb-6">
-          <Link
-            href="/presupuestos/nuevo"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
-          >
-            <PlusCircle className="w-5 h-5" />
-            Crear Nuevo Presupuesto
-          </Link>
-        </div>
+        <section className="mb-6 grid gap-4 sm:grid-cols-3">
+          <div className="card flex items-center gap-4 p-5"><FileText className="text-blue-600" /><div><p className="muted text-sm">Total</p><p className="text-2xl font-extrabold">{total}</p></div></div>
+          <div className="card flex items-center gap-4 p-5"><Send className="text-indigo-600" /><div><p className="muted text-sm">Enviados</p><p className="text-2xl font-extrabold">{enviados}</p></div></div>
+          <div className="card flex items-center gap-4 p-5"><FileCheck2 className="text-green-600" /><div><p className="muted text-sm">Aceptados</p><p className="text-2xl font-extrabold">{aceptados}</p></div></div>
+        </section>
 
-        {/* Lista de presupuestos */}
-        {presupuestos.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No hay presupuestos
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Crea tu primer presupuesto para comenzar
-            </p>
-            <Link
-              href="/presupuestos/nuevo"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Crear Presupuesto
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {presupuestos.map((presupuesto: PresupuestoConRelaciones) => (
-              <Link
-                key={presupuesto.id}
-                href={`/presupuestos/${presupuesto.id}`}
-                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-6 border border-gray-100 hover:border-blue-300"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Presupuesto #{presupuesto.numero}
-                    </h3>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                        presupuesto.estado === "borrador"
-                          ? "bg-gray-100 text-gray-700"
-                          : presupuesto.estado === "enviado"
-                          ? "bg-blue-100 text-blue-700"
-                          : presupuesto.estado === "aceptado"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {presupuesto.estado.charAt(0).toUpperCase() +
-                        presupuesto.estado.slice(1)}
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    €{presupuesto.total.toFixed(2)}
-                  </div>
-                </div>
+        <form className="card mb-6 flex gap-3 p-4 mobile-stack" method="get">
+          <div className="relative flex-1"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input className="field pl-10" name="q" defaultValue={q} placeholder="Número, cliente, correo o empresa" /></div>
+          <select className="field sm:max-w-52" name="estado" defaultValue={estado || ""}><option value="">Todos los estados</option>{allowedStates.map((item) => <option key={item} value={item}>{stateLabel[item]}</option>)}</select>
+          <button className="btn btn-secondary">Buscar</button>
+        </form>
 
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>{presupuesto.cliente.nombre}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    <span>
-                      {presupuesto.productos.length}{" "}
-                      {presupuesto.productos.length === 1
-                        ? "producto"
-                        : "productos"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(presupuesto.createdAt).toLocaleDateString(
-                        "es-ES"
-                      )}
-                    </span>
-                  </div>
-                </div>
+        {presupuestos.length ? (
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {presupuestos.map((p) => (
+              <Link href={`/presupuestos/${p.id}`} key={p.id} className="card block p-5 text-inherit no-underline transition hover:-translate-y-0.5 hover:shadow-lg">
+                <div className="mb-4 flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-blue-700">{p.numero}</p><h2 className="mt-1 text-lg font-extrabold">{p.clienteNombre}</h2><p className="muted text-sm">{p.clienteEmpresa || p.clienteEmail}</p></div><span className={`badge badge-${p.estado}`}>{stateLabel[p.estado]}</span></div>
+                <div className="flex items-end justify-between border-t border-slate-100 pt-4"><div className="muted text-sm"><p>{p._count.productos} producto{p._count.productos === 1 ? "" : "s"}</p><p>{p.createdAt.toLocaleDateString("es-ES")}</p></div><strong className="text-xl text-blue-700">{p.total.toFixed(2)} €</strong></div>
               </Link>
             ))}
-          </div>
-        )}
+          </section>
+        ) : <div className="card p-12 text-center"><FileText className="mx-auto mb-4 text-slate-300" size={50} /><h2 className="text-xl font-extrabold">No hay resultados</h2><p className="muted mt-2">Crea un presupuesto o cambia los filtros.</p></div>}
       </div>
-    </div>
     </AdminLayout>
   );
 }

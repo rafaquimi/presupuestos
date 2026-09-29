@@ -1,234 +1,85 @@
-# Gestor de Presupuestos - Tienda de Informática
+# Gestor seguro de presupuestos
 
-Una aplicación web moderna para crear y gestionar presupuestos de productos informáticos. Permite crear presupuestos con imágenes, compartirlos mediante enlace público y generar PDFs.
+Aplicación Next.js para crear, editar, compartir y enviar presupuestos. La reconstrucción de 2026 incorpora PostgreSQL, Prisma, autenticación con contraseñas cifradas, sesiones firmadas, enlaces públicos revocables y validación en servidor.
 
-## 🚀 Características
+## Funciones
 
-- ✨ **Crear presupuestos** con múltiples productos
-- 📸 **Agregar imágenes** pegándolas directamente (Ctrl+V) o mediante URL
-- 📝 **Características detalladas** para cada producto
-- 💰 **Cálculo automático** de totales y subtotales
-- 🔗 **Enlaces compartibles** para que los clientes vean el presupuesto
-- 📧 **Envío por email** con diseño profesional
-- 📄 **Generación de PDF** con diseño atractivo
-- 📱 **Diseño responsive** que funciona en móviles y tablets
-- 🎨 **Interfaz moderna** con Tailwind CSS
+- Panel con búsqueda, filtros y estados.
+- Alta, edición y eliminación de presupuestos.
+- Clientes actualizados automáticamente y consulta de historial.
+- Cálculo seguro de subtotal, IVA y total en el servidor.
+- Enlaces públicos aleatorios, revocables y con caducidad opcional.
+- PDF privado y público.
+- Envío por SMTP únicamente desde una sesión autorizada.
+- Configuración de datos de empresa, IVA y validez.
+- Bloqueo temporal después de cinco intentos de acceso fallidos.
 
-## 🛠️ Tecnologías Utilizadas
+## Puesta en marcha
 
-- **Next.js 16** - Framework de React
-- **TypeScript** - Tipado estático
-- **Tailwind CSS** - Estilos modernos
-- **Prisma** - ORM para base de datos
-- **SQLite** - Base de datos (fácil de cambiar a PostgreSQL para producción)
-- **@react-pdf/renderer** - Generación de PDFs
-- **Nodemailer** - Envío de correos
-- **Lucide React** - Iconos
+Requisitos: Node.js 22 y una base PostgreSQL vacía. Para Supabase usa el
+pool de transacciones en `DATABASE_URL` y la conexión directa en `DIRECT_URL`.
 
-## 📦 Instalación
-
-1. **Clonar el repositorio** (si aplica) o usar este directorio
-
-2. **Instalar dependencias**:
-\`\`\`bash
-npm install
-\`\`\`
-
-3. **Configurar variables de entorno**:
-Crea un archivo \`.env\` en la raíz del proyecto:
-
-\`\`\`env
-# Base de datos
-DATABASE_URL="file:./dev.db"
-
-# URL de la aplicación
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-
-# Configuración de correo (opcional - solo si quieres enviar emails)
-# Para Gmail, debes crear una "App Password" en tu cuenta de Google
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="tu-email@gmail.com"
-SMTP_PASSWORD="tu-app-password"
-SMTP_FROM="Tu Tienda <tu-email@gmail.com>"
-\`\`\`
-
-4. **Configurar la base de datos**:
-\`\`\`bash
-$env:DATABASE_URL="file:./dev.db"; npx prisma migrate dev --name init
-npx prisma generate
-\`\`\`
-
-5. **Iniciar el servidor de desarrollo**:
-\`\`\`bash
+```bash
+npm ci
+cp .env.example .env
+npx prisma migrate deploy
+npm run seed
 npm run dev
-\`\`\`
+```
 
-6. **Abrir en el navegador**:
-Visita [http://localhost:3000](http://localhost:3000)
+Antes de ejecutar el `seed`, configura `ADMIN_EMAIL`, `ADMIN_NAME` y una `ADMIN_PASSWORD` de al menos 12 caracteres. Después del seed, `ADMIN_PASSWORD` puede retirarse del entorno: la base guarda únicamente el hash bcrypt.
 
-## 📖 Cómo Usar
+Genera `AUTH_SECRET` con:
 
-### Crear un Presupuesto
+```bash
+openssl rand -base64 48
+```
 
-1. Haz clic en **"Crear Nuevo Presupuesto"** en la página principal
-2. Completa los **datos del cliente** (nombre, email, teléfono, empresa)
-3. Haz clic en **"Agregar Producto"** para añadir productos
-4. Para cada producto:
-   - Escribe el nombre y descripción
-   - Añade características (una por línea)
-   - Establece el precio y cantidad
-   - Pega una imagen (Ctrl+V) o ingresa la URL de una imagen
-5. Añade **notas adicionales** si es necesario
-6. Haz clic en **"Crear Presupuesto"**
+## Despliegue en Vercel
 
-### Compartir un Presupuesto
+1. Crea una base PostgreSQL en Supabase, Neon u otro proveedor.
+2. Configura en Vercel las variables de `.env.example`.
+3. Ejecuta una vez `npx prisma migrate deploy` y `npm run seed` apuntando a producción.
+4. Importa este repositorio en Vercel.
+5. Establece `APP_URL` con el dominio HTTPS definitivo.
 
-1. Abre el presupuesto que deseas compartir
-2. Usa el botón **"Copiar Enlace"** para copiar la URL pública
-3. Envía el enlace al cliente por WhatsApp, email, etc.
-4. O usa el botón **"Enviar por Email"** para enviarlo automáticamente
+El despliegue incluye un cron diario protegido por `CRON_SECRET` que ejecuta
+una consulta mínima de salud. En Vercel Hobby, un cron sólo puede ejecutarse
+una vez al día. Esta actividad reduce el riesgo de pausa por inactividad en un
+proyecto gratuito de Supabase, pero no sustituye una garantía de disponibilidad
+de un plan de pago.
 
-### Descargar PDF
+No utilices `prisma db push` en producción. Las migraciones versionadas son la fuente de verdad.
 
-1. Abre el presupuesto
-2. Haz clic en **"Descargar PDF"**
-3. El PDF se generará y descargará automáticamente
+## Imágenes
 
-## 🚀 Despliegue en Vercel
+Las imágenes externas se aceptan solamente por HTTPS y desde los dominios incluidos en `ALLOWED_IMAGE_HOSTS`, separados por comas. No se guardan imágenes base64 dentro de PostgreSQL y el optimizador de imágenes del servidor está desactivado para evitar solicitudes a destinos arbitrarios.
 
-1. **Subir a GitHub**:
-\`\`\`bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin <tu-repositorio>
-git push -u origin main
-\`\`\`
+Ejemplo:
 
-2. **Conectar con Vercel**:
-   - Ve a [vercel.com](https://vercel.com)
-   - Importa tu repositorio de GitHub
-   - Vercel detectará automáticamente que es un proyecto Next.js
+```env
+ALLOWED_IMAGE_HOSTS="res.cloudinary.com,mi-proyecto.supabase.co"
+```
 
-3. **Configurar variables de entorno** en Vercel:
-   - Ve a Settings → Environment Variables
-   - Añade todas las variables del archivo \`.env\`
-   - Para producción, usa PostgreSQL en lugar de SQLite:
-     - Crea una base de datos en [Supabase](https://supabase.com) o [Railway](https://railway.app)
-     - Actualiza \`DATABASE_URL\` con la URL de PostgreSQL
-     - En \`prisma/schema.prisma\`, cambia \`provider = "sqlite"\` a \`provider = "postgresql"\`
+## Seguridad
 
-4. **Desplegar**:
-   - Vercel desplegará automáticamente tu aplicación
-   - Cada push a \`main\` creará un nuevo despliegue
+- No existen credenciales predeterminadas.
+- La cookie de sesión es `HttpOnly`, `Secure` en producción y `SameSite=Strict`.
+- Las API privadas verifican sesión y origen.
+- Los datos recibidos se validan con Zod y tienen límites de tamaño.
+- Los totales, numeración y tokens públicos se generan en el servidor.
+- Nodemailer tiene desactivado el acceso a archivos y URLs.
+- El correo saliente permanece deshabilitado salvo que `EMAIL_ENABLED=true` y
+  las credenciales SMTP hayan sido renovadas.
+- Las cabeceras CSP, anti-frame, anti-MIME y permisos se aplican globalmente.
 
-## 📁 Estructura del Proyecto
+## Comprobaciones
 
-\`\`\`
-presupuestos/
-├── app/
-│   ├── api/
-│   │   └── presupuestos/
-│   │       ├── route.ts              # API para listar/crear presupuestos
-│   │       ├── enviar/route.ts       # API para enviar emails
-│   │       └── [id]/pdf/route.ts     # API para generar PDFs
-│   ├── presupuestos/
-│   │   ├── nuevo/page.tsx            # Página para crear presupuesto
-│   │   └── [id]/
-│   │       ├── page.tsx              # Página de detalle del presupuesto
-│   │       └── AccionesPresupuesto.tsx
-│   ├── ver/[id]/
-│   │   ├── page.tsx                  # Vista pública del presupuesto
-│   │   └── DescargarPDFButton.tsx
-│   ├── layout.tsx
-│   ├── page.tsx                      # Página principal
-│   └── globals.css
-├── lib/
-│   ├── prisma.ts                     # Cliente de Prisma
-│   └── pdf-generator.tsx             # Generador de PDFs
-├── prisma/
-│   └── schema.prisma                 # Esquema de base de datos
-├── .env                              # Variables de entorno (no subir a git)
-├── package.json
-└── README.md
-\`\`\`
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm audit --omit=dev
+```
 
-## 🗄️ Modelos de Datos
-
-### Cliente
-- Nombre
-- Email
-- Teléfono (opcional)
-- Empresa (opcional)
-
-### Presupuesto
-- Número único (auto-generado)
-- Cliente (relación)
-- Productos (relación)
-- Total
-- Estado (borrador, enviado, aceptado, rechazado)
-- Notas adicionales
-- Fechas de creación/actualización
-
-### Producto
-- Nombre
-- Descripción
-- Características
-- Precio
-- Cantidad
-- Imagen URL
-
-## 🎨 Personalización
-
-### Cambiar Colores
-Los colores principales están en las clases de Tailwind. Busca y reemplaza:
-- \`blue-600\` por tu color principal
-- \`indigo-600\` por tu color secundario
-
-### Logo y Nombre
-1. Actualiza el título en \`app/layout.tsx\`
-2. Cambia "Tu Tienda de Informática" en los archivos relevantes
-3. Añade tu logo en la carpeta \`public/\`
-
-### Email Template
-Modifica el HTML en \`app/api/presupuestos/enviar/route.ts\`
-
-## 📝 Notas Importantes
-
-- **SQLite** es solo para desarrollo. Para producción usa **PostgreSQL**
-- Configura el **SMTP** para poder enviar correos reales
-- Las imágenes se guardan como **URLs** o **base64** (para imágenes pegadas)
-- Para producción, considera usar un servicio de almacenamiento como **Cloudinary** o **S3**
-
-## 🐛 Solución de Problemas
-
-### La base de datos no se crea
-\`\`\`bash
-$env:DATABASE_URL="file:./dev.db"
-npx prisma migrate reset
-npx prisma migrate dev --name init
-npx prisma generate
-\`\`\`
-
-### Los emails no se envían
-- Verifica que las variables SMTP_* estén configuradas
-- Para Gmail, usa una "App Password" en lugar de tu contraseña normal
-- La aplicación funcionará sin SMTP, solo que no enviará correos
-
-### Error al generar PDF
-- Asegúrate de que las imágenes sean URLs válidas
-- Las imágenes en base64 pueden causar PDFs grandes
-
-## 📄 Licencia
-
-Este proyecto es de uso libre para tu tienda de informática.
-
-## 🤝 Soporte
-
-Si necesitas ayuda o tienes preguntas, no dudes en contactar.
-
----
-
-¡Disfruta gestionando tus presupuestos! 🎉
+GitHub Actions ejecuta estas comprobaciones en cada `push` y `pull request`.

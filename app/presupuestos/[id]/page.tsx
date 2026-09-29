@@ -1,248 +1,41 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft, Download, Pencil } from "lucide-react";
+import AdminLayout from "@/components/AdminLayout";
+import PresupuestoActions from "@/components/PresupuestoActions";
 import { prisma } from "@/lib/prisma";
-import {
-  ArrowLeft,
-  Download,
-  Send,
-  User,
-  Mail,
-  Phone,
-  Building,
-  Calendar,
-  FileText,
-} from "lucide-react";
-import Image from "next/image";
-import AccionesPresupuesto from "./AccionesPresupuesto";
+import { requireUser } from "@/lib/auth";
 
-// Forzar renderizado dinámico
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+const stateLabel = { BORRADOR: "Borrador", ENVIADO: "Enviado", ACEPTADO: "Aceptado", RECHAZADO: "Rechazado" } as const;
 
-async function getPresupuesto(id: string) {
-  const presupuesto = await prisma.presupuesto.findUnique({
-    where: { id },
-    include: {
-      cliente: true,
-      productos: true,
-    },
-  });
-
-  return presupuesto;
-}
-
-type PresupuestoConRelaciones = NonNullable<Awaited<ReturnType<typeof getPresupuesto>>>;
-type ProductoType = PresupuestoConRelaciones['productos'][0];
-
-export default async function PresupuestoPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PresupuestoPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireUser();
   const { id } = await params;
-  const presupuesto = await getPresupuesto(id);
-
-  if (!presupuesto) {
-    notFound();
-  }
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const enlacePublico = `${appUrl}/ver/${presupuesto.id}`;
+  const p = await prisma.presupuesto.findUnique({ where: { id }, include: { productos: true } });
+  if (!p) notFound();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver al listado
-          </Link>
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Presupuesto #{presupuesto.numero}
-              </h1>
-              <span
-                className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                  presupuesto.estado === "borrador"
-                    ? "bg-gray-100 text-gray-700"
-                    : presupuesto.estado === "enviado"
-                    ? "bg-blue-100 text-blue-700"
-                    : presupuesto.estado === "aceptado"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {presupuesto.estado.charAt(0).toUpperCase() +
-                  presupuesto.estado.slice(1)}
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600 mb-1">Total</div>
-              <div className="text-4xl font-bold text-blue-600">
-                €{presupuesto.total.toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </div>
+    <AdminLayout>
+      <div className="container-app py-8">
+        <Link href="/" className="mb-5 inline-flex items-center gap-2 font-semibold text-blue-700"><ArrowLeft size={17} /> Volver</Link>
+        <section className="card mb-6 p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-5 mobile-stack"><div><div className="mb-3 flex flex-wrap items-center gap-3"><h1 className="text-3xl font-extrabold">{p.numero}</h1><span className={`badge badge-${p.estado}`}>{stateLabel[p.estado]}</span></div><p className="muted">Creado el {p.createdAt.toLocaleDateString("es-ES")}</p></div><div className="text-left sm:text-right"><p className="muted text-sm">Total</p><p className="text-3xl font-extrabold text-blue-700">{p.total.toFixed(2)} €</p></div></div>
+          <div className="mt-6 flex flex-wrap gap-2"><Link className="btn btn-primary" href={`/presupuestos/${id}/editar`}><Pencil size={17} /> Editar</Link><a className="btn btn-ghost" href={`/api/presupuestos/${id}/pdf`}><Download size={17} /> Descargar PDF</a></div>
+        </section>
 
-        {/* Acciones */}
-        <AccionesPresupuesto
-          presupuestoId={presupuesto.id}
-          clienteEmail={presupuesto.cliente.email}
-          clienteTelefono={presupuesto.cliente.telefono || undefined}
-          numeroPresupuesto={presupuesto.numero}
-          total={presupuesto.total}
-          enlacePublico={enlacePublico}
-        />
-
-        {/* Información del Cliente */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-            Información del Cliente
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-600">Nombre</div>
-                <div className="font-medium">{presupuesto.cliente.nombre}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-600">Email</div>
-                <div className="font-medium">{presupuesto.cliente.email}</div>
-              </div>
-            </div>
-            {presupuesto.cliente.telefono && (
-              <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-600">Teléfono</div>
-                  <div className="font-medium">
-                    {presupuesto.cliente.telefono}
-                  </div>
-                </div>
-              </div>
-            )}
-            {presupuesto.cliente.empresa && (
-              <div className="flex items-center gap-3">
-                <Building className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-600">Empresa</div>
-                  <div className="font-medium">
-                    {presupuesto.cliente.empresa}
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-gray-400" />
-              <div>
-                <div className="text-sm text-gray-600">Fecha de creación</div>
-                <div className="font-medium">
-                  {new Date(presupuesto.createdAt).toLocaleDateString("es-ES", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Productos */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-            Productos
-          </h2>
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
-            {presupuesto.productos.map((producto: ProductoType, index: number) => (
-              <div
-                key={producto.id}
-                className="border border-gray-200 rounded-lg p-4"
-              >
-                <div className="flex gap-6">
-                  {producto.imagenUrl && (
-                    <div className="flex-shrink-0">
-                      <Image
-                        src={producto.imagenUrl}
-                        alt={producto.nombre}
-                        width={150}
-                        height={150}
-                        className="rounded-lg object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-grow">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      {index + 1}. {producto.nombre}
-                    </h3>
-                    {producto.descripcion && (
-                      <p className="text-gray-600 mb-3">
-                        {producto.descripcion}
-                      </p>
-                    )}
-                    {producto.caracteristicas && (
-                      <div className="mb-3">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          Características:
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1 text-gray-600">
-                          {producto.caracteristicas
-                            .split("\n")
-                            .filter((c: string) => c.trim())
-                            .map((caracteristica: string, idx: number) => (
-                              <li key={idx}>{caracteristica.trim()}</li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                      <div className="text-gray-600">
-                        Cantidad: {producto.cantidad} x €
-                        {producto.precio.toFixed(2)}
-                      </div>
-                      <div className="text-xl font-bold text-blue-600">
-                        €{(producto.precio * producto.cantidad).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <section className="card p-6"><h2 className="mb-4 text-xl font-extrabold">Productos</h2><div className="space-y-4">{p.productos.map((product) => <article key={product.id} className="rounded-xl border border-slate-200 p-4"><div className="flex justify-between gap-4"><div><h3 className="font-extrabold">{product.nombre}</h3>{product.descripcion && <p className="muted mt-1">{product.descripcion}</p>}{product.caracteristicas && <p className="mt-3 whitespace-pre-line text-sm text-slate-600">{product.caracteristicas}</p>}</div><strong className="whitespace-nowrap text-blue-700">{product.precio.mul(product.cantidad).toFixed(2)} €</strong></div><p className="muted mt-3 text-sm">{product.cantidad} × {product.precio.toFixed(2)} €</p></article>)}</div></section>
+            {p.notas && <section className="card p-6"><h2 className="mb-3 text-xl font-extrabold">Notas</h2><p className="whitespace-pre-line text-slate-600">{p.notas}</p></section>}
           </div>
-        </div>
-
-        {/* Notas */}
-        {presupuesto.notas && (
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Notas Adicionales
-            </h2>
-            <p className="text-gray-600 whitespace-pre-wrap">
-              {presupuesto.notas}
-            </p>
-          </div>
-        )}
-
-        {/* Total */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex justify-between items-center text-2xl font-bold">
-            <span className="text-gray-900">Total del Presupuesto</span>
-            <span className="text-blue-600">
-              €{presupuesto.total.toFixed(2)}
-            </span>
-          </div>
+          <aside className="space-y-6">
+            <section className="card p-5"><h2 className="mb-3 font-extrabold">Cliente</h2><p className="font-bold">{p.clienteNombre}</p>{p.clienteEmpresa && <p>{p.clienteEmpresa}</p>}<p className="muted mt-2 text-sm">{p.clienteEmail}</p>{p.clienteTelefono && <p className="muted text-sm">{p.clienteTelefono}</p>}</section>
+            <section className="card p-5"><h2 className="mb-3 font-extrabold">Totales</h2><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{p.subtotal.toFixed(2)} €</span></div><div className="flex justify-between"><span>IVA ({p.ivaPorcentaje.toFixed(2)}%)</span><span>{p.iva.toFixed(2)} €</span></div><div className="flex justify-between border-t pt-3 text-lg font-extrabold"><span>Total</span><span>{p.total.toFixed(2)} €</span></div></div></section>
+            <section className="card p-5"><h2 className="mb-3 font-extrabold">Compartir</h2><p className="muted mb-4 text-sm">{p.publicEnabled ? "Enlace activo" : "Enlace desactivado"}{p.publicExpiresAt ? ` hasta ${p.publicExpiresAt.toLocaleDateString("es-ES")}` : " sin caducidad"}.</p><PresupuestoActions id={p.id} publicToken={p.publicToken} publicEnabled={p.publicEnabled} /></section>
+          </aside>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
-
