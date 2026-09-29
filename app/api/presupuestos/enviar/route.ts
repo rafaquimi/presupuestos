@@ -17,6 +17,12 @@ export async function POST(request: Request) {
     if (!body || typeof body.presupuestoId !== "string") {
       return NextResponse.json({ error: "Solicitud no válida" }, { status: 400 });
     }
+    if (process.env.EMAIL_ENABLED !== "true") {
+      return NextResponse.json(
+        { error: "El envío de correo está desactivado hasta renovar las credenciales SMTP" },
+        { status: 503 },
+      );
+    }
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
       return NextResponse.json({ error: "El correo SMTP no está configurado" }, { status: 503 });
     }

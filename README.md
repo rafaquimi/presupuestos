@@ -69,6 +69,8 @@ ALLOWED_IMAGE_HOSTS="res.cloudinary.com,mi-proyecto.supabase.co"
 - Los datos recibidos se validan con Zod y tienen límites de tamaño.
 - Los totales, numeración y tokens públicos se generan en el servidor.
 - Nodemailer tiene desactivado el acceso a archivos y URLs.
+- El correo saliente permanece deshabilitado salvo que `EMAIL_ENABLED=true` y
+  las credenciales SMTP hayan sido renovadas.
 - Las cabeceras CSP, anti-frame, anti-MIME y permisos se aplican globalmente.
 
 ## Comprobaciones
