@@ -9,6 +9,21 @@ export const loginSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+export const passwordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(8).max(128),
+    newPassword: z.string().min(12).max(128),
+    confirmPassword: z.string().min(12).max(128),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Las contraseñas nuevas no coinciden",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "La contraseña nueva debe ser diferente",
+    path: ["newPassword"],
+  });
+
 export const productoSchema = z.object({
   nombre: z.string().trim().min(1).max(160),
   descripcion: optionalText(2000),
