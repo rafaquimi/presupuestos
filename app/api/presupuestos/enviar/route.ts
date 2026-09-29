@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const appUrl = (process.env.APP_URL || new URL(request.url).origin).replace(/\/$/, "");
     const publicUrl = `${appUrl}/ver/${encodeURIComponent(presupuesto.publicToken)}`;
     const products = presupuesto.productos.map((p) =>
-      `<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb">${escapeHtml(p.nombre)}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">${p.cantidad} × ${p.precio.toFixed(2)} €</td></tr>`,
+      `<tr><td style="padding:8px;border-bottom:1px solid #e5e7eb">${escapeHtml(p.nombre)}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">${p.cantidad} × ${p.precio.toFixed(2)} € (IVA incluido)</td></tr>`,
     ).join("");
 
     const transporter = nodemailer.createTransport({

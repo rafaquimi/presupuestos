@@ -51,6 +51,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   productName: { fontSize: 11, fontWeight: 700, flexGrow: 1 },
   muted: { color: "#64748b", marginTop: 3, lineHeight: 1.4 },
+  description: { color: "#475569", marginTop: 6, lineHeight: 1.45 },
+  characteristics: { marginTop: 9, paddingTop: 6, borderTop: "1 solid #e2e8f0" },
+  characteristicsTitle: { color: "#334155", fontSize: 9, fontWeight: 700, marginBottom: 3 },
+  feature: { color: "#64748b", marginTop: 2, lineHeight: 1.35 },
   totals: { marginLeft: "auto", width: 230, marginTop: 18 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
   grandTotal: { flexDirection: "row", justifyContent: "space-between", paddingTop: 8, marginTop: 5, borderTop: "1 solid #94a3b8", fontSize: 14, fontWeight: 700, color: "#1d4ed8" },
@@ -93,7 +97,7 @@ export function PresupuestoPDF({ presupuesto, configuracion }: { presupuesto: Pd
           <Text style={styles.sectionTitle}>DETALLE</Text>
           <View style={styles.box}>
             {presupuesto.productos.map((producto, index) => (
-              <View key={`${producto.nombre}-${index}`} style={index === presupuesto.productos.length - 1 ? styles.productLast : styles.product} wrap={false}>
+              <View key={`${producto.nombre}-${index}`} style={index === presupuesto.productos.length - 1 ? styles.productLast : styles.product}>
                 <View style={styles.productContent}>
                   {producto.imagenUrl && <Image src={producto.imagenUrl} style={styles.productImage} />}
                   <View style={styles.productText}>
@@ -102,8 +106,15 @@ export function PresupuestoPDF({ presupuesto, configuracion }: { presupuesto: Pd
                       <Text>{producto.cantidad} x {money(producto.precio)}</Text>
                       <Text>{money(producto.cantidad * producto.precio)}</Text>
                     </View>
-                    {producto.descripcion && <Text style={styles.muted}>{producto.descripcion}</Text>}
-                    {producto.caracteristicas && <Text style={styles.muted}>{producto.caracteristicas}</Text>}
+                    {producto.descripcion && <Text style={styles.description}>{producto.descripcion}</Text>}
+                    {producto.caracteristicas && (
+                      <View style={styles.characteristics}>
+                        <Text style={styles.characteristicsTitle}>CARACTERÍSTICAS</Text>
+                        {producto.caracteristicas.split("\n").filter(Boolean).map((line, lineIndex) => (
+                          <Text key={lineIndex} style={styles.feature}>• {line}</Text>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
@@ -119,8 +130,8 @@ export function PresupuestoPDF({ presupuesto, configuracion }: { presupuesto: Pd
         )}
 
         <View style={styles.totals} wrap={false}>
-          <View style={styles.totalRow}><Text>Subtotal</Text><Text>{money(presupuesto.subtotal)}</Text></View>
-          <View style={styles.totalRow}><Text>IVA ({presupuesto.ivaPorcentaje.toFixed(2)}%)</Text><Text>{money(presupuesto.iva)}</Text></View>
+          <View style={styles.totalRow}><Text>Base imponible</Text><Text>{money(presupuesto.subtotal)}</Text></View>
+          <View style={styles.totalRow}><Text>IVA incluido ({presupuesto.ivaPorcentaje.toFixed(2)}%)</Text><Text>{money(presupuesto.iva)}</Text></View>
           <View style={styles.grandTotal}><Text>Total</Text><Text>{money(presupuesto.total)}</Text></View>
         </View>
 

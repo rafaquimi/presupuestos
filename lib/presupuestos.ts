@@ -4,16 +4,18 @@ export function calculateTotals(
   productos: Array<{ precio: number; cantidad: number }>,
   ivaPorcentaje: number,
 ) {
-  const subtotalCents = productos.reduce(
+  const totalCents = productos.reduce(
     (sum, producto) =>
       sum + Math.round(producto.precio * 100) * producto.cantidad,
     0,
   );
-  const ivaCents = Math.round((subtotalCents * ivaPorcentaje) / 100);
+  const taxRate = Math.max(0, ivaPorcentaje) / 100;
+  const subtotalCents = Math.round(totalCents / (1 + taxRate));
+  const ivaCents = totalCents - subtotalCents;
   return {
     subtotal: new Prisma.Decimal(subtotalCents).div(100),
     iva: new Prisma.Decimal(ivaCents).div(100),
-    total: new Prisma.Decimal(subtotalCents + ivaCents).div(100),
+    total: new Prisma.Decimal(totalCents).div(100),
   };
 }
 

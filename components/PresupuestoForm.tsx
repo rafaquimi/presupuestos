@@ -53,9 +53,11 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
   const [uploadingImage, setUploadingImage] = useState("");
 
   const totals = useMemo(() => {
-    const subtotal = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (Number(p.cantidad) || 0), 0);
-    const tax = subtotal * (Number(iva) || 0) / 100;
-    return { subtotal, tax, total: subtotal + tax };
+    const total = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (Number(p.cantidad) || 0), 0);
+    const rate = Math.max(0, Number(iva) || 0) / 100;
+    const subtotal = total / (1 + rate);
+    const tax = total - subtotal;
+    return { subtotal, tax, total };
   }, [productos, iva]);
 
   function updateProduct(key: string, field: keyof ProductoForm, value: string | number) {
@@ -168,7 +170,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
                 <div className="sm:col-span-2"><label className="label">Nombre *</label><input className="field" required maxLength={160} value={product.nombre} onChange={(e) => updateProduct(product.key, "nombre", e.target.value)} /></div>
                 <div className="sm:col-span-2"><label className="label">Descripción</label><textarea className="field" rows={2} maxLength={2000} value={product.descripcion} onChange={(e) => updateProduct(product.key, "descripcion", e.target.value)} /></div>
                 <div className="sm:col-span-2"><label className="label">Características (una por línea)</label><textarea className="field" rows={4} maxLength={5000} value={product.caracteristicas} onChange={(e) => updateProduct(product.key, "caracteristicas", e.target.value)} /></div>
-                <div><label className="label">Precio sin IVA *</label><input className="field" type="number" min="0" max="10000000" step="0.01" required value={product.precio} onChange={(e) => updateProduct(product.key, "precio", Number(e.target.value))} /></div>
+                <div><label className="label">Precio con IVA incluido *</label><input className="field" type="number" min="0" max="10000000" step="0.01" required value={product.precio} onChange={(e) => updateProduct(product.key, "precio", Number(e.target.value))} /><p className="muted mt-1 text-xs">Introduce el precio final que pagará el cliente.</p></div>
                 <div><label className="label">Cantidad *</label><input className="field" type="number" min="1" max="100000" step="1" required value={product.cantidad} onChange={(e) => updateProduct(product.key, "cantidad", Number(e.target.value))} /></div>
                 <div className="sm:col-span-2">
                   <label className="label">Imagen del producto</label>
@@ -231,7 +233,7 @@ export default function PresupuestoForm({ initial, defaultVat = 21 }: { initial?
       </section>
 
       <section className="card flex items-center justify-between gap-5 p-5 mobile-stack">
-        <div className="space-y-1 text-right sm:ml-auto"><p className="muted">Subtotal: {totals.subtotal.toFixed(2)} €</p><p className="muted">IVA: {totals.tax.toFixed(2)} €</p><p className="text-2xl font-extrabold text-blue-700">Total: {totals.total.toFixed(2)} €</p></div>
+        <div className="space-y-1 text-right sm:ml-auto"><p className="muted">Base imponible: {totals.subtotal.toFixed(2)} €</p><p className="muted">IVA incluido: {totals.tax.toFixed(2)} €</p><p className="text-2xl font-extrabold text-blue-700">Total: {totals.total.toFixed(2)} €</p></div>
         <button className="btn btn-primary min-w-48" disabled={saving}><Save size={18} /> {saving ? "Guardando…" : initial ? "Guardar cambios" : "Crear presupuesto"}</button>
       </section>
     </form>
